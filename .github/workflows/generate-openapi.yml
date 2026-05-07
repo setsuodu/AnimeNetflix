@@ -13,29 +13,47 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      - name: Install Swashbuckle CLI
-        run: dotnet tool install --global Swashbuckle.AspNetCore.Cli || echo "Already installed"
+      # === 关键：先清理 + 完整还原 + 构建 ===
+      - name: Clean + Restore + Build
+        run: |
+          dotnet clean
+          dotnet restore
+          dotnet build Anime.Api/Anime.Api.csproj --configuration Release --no-restore
 
-      - name: Restore tools
-        run: dotnet tool restore
-
-      - name: Build
-        run: dotnet build Anime.Api/Anime.Api.csproj --configuration Release
-
+      # === 关键：动态找 DLL（避免路径写死出问题）===
       - name: Generate openapi.json
         run: |
-          dotnet swagger tofile --output openapi.json Anime.Api/bin/Release/net10.0/Anime.Api.dll v1
+          echo "=== 查找生成的 DLL ==="
+          find Anime.Api/bin -name "*.dll" | head -10
+          
+          DLL_PATH=$(find Anime.Api/bin/Release -name "Anime.Api.dll" | head -1)
+          if [ -z "$DLL_PATH" ]; then
+            echo "❌ 没找到 Anime.Api.dll"
+            ls -R Anime.Api/bin/Release
+            exit 1
+          fi
+          
+          echo "✅ 使用 DLL: $DLL_PATH"
+          dotnet tool install --global Swashbuckle.AspNetCore.Cli --version 8.0.0 || true
+          
+          dotnet swagger tofile --output openapi.json "$DLL_PATH" v1 || {
+            echo "❌ swagger 生成失败，尝试备用路径..."
+            # 备用：直接用 net10.0 文件夹
+            dotnet swagger tofile --output openapi.json Anime.Api/bin/Release/net10.0/Anime.Api.dll v1
+          }
 
       - name: Commit & Push openapi.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add openapi.json
-          git commit -m "chore: update openapi.json" || echo "No changes to commit"
+          git add openapi.json || true
+          git commit -m "chore: update openapi.json [skip ci]" || echo "No changes to commit"
           git push
