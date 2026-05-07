@@ -12,6 +12,12 @@ namespace Anime.Infrastructure.Entities
         [MaxLength(200)]
         public string Title { get; set; } = string.Empty;
 
+        [MaxLength(200)]
+        public string JapaneseTitle { get; set; } = string.Empty;   // ← 新增：日文名
+
+        [MaxLength(200)]
+        public string EnglishTitle { get; set; } = string.Empty;    // ← 新增：英文名
+
         // 在 AnimeInfo.cs 中添加
         public string CoverUrl { get; set; } = string.Empty;
 

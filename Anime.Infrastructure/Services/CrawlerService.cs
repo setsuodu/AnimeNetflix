@@ -67,6 +67,8 @@ public class CrawlerService
                         db.Animes.Add(new AnimeInfo
                         {
                             Title = item.Title,
+                            JapaneseTitle = string.Empty, // 该网站爬不到
+                            EnglishTitle = string.Empty, // 该网站爬不到
                             SourceFingerprint = item.Fingerprint,
                             PlayUrls = detail.Play1,
                             BackupUrls = detail.Play2 ?? string.Empty, // 满足 NOT NULL 约束

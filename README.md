@@ -33,6 +33,8 @@ AnimeNetflix/                        <-- 根目录 (docker-compose & Dockerfile 
 
 1. Ctrl + ` 打开终端
 
+D:\GitHub\[Workspace]\AnimeNetflix\
+
 2. 确保停止并移除所有残留容器、网络
 docker-compose down
 
@@ -84,4 +86,5 @@ docker compose up -d
 
 ## TODO:
 
-- [ ] 1. docker-compose 第一次自动启动出错，应该是db未完全启动问题
+- [x] 1. docker-compose 第一次自动启动出错，应该是db未完全启动问题；
+- [ ] 2. manus 爬取 cover，英文名，更新数据库；

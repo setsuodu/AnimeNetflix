@@ -124,6 +124,7 @@ namespace Anime.Api.Controllers
                     // 把 [第xx集]、[OVA]、[剧场版] 等全部去掉
                     Title = Regex.Replace(x.Title, @"\s*\[.*?\]", "").Trim(),
                     Title_JP = "", // 番剧日文原名
+                    Title_EN = "", // 番剧英文名
                     CoverFile = "", // 封面文件名
                 })
                 .ToListAsync();
@@ -203,6 +204,8 @@ namespace Anime.Api.Controllers
                     anime.CoverUrl = item.CoverUrl;   // 更新封面
                     if (!string.IsNullOrWhiteSpace(item.Title_JP))
                         anime.Title = item.Title_JP;  // 可选：更新日文名
+                    if (!string.IsNullOrWhiteSpace(item.Title_EN))
+                        anime.Title = item.Title_JP;  // 可选：更新英文名
 
                     updated++;
                 }
@@ -218,6 +221,7 @@ namespace Anime.Api.Controllers
         {
             public string Title { get; set; } = string.Empty;
             public string Title_JP { get; set; } = string.Empty;
+            public string Title_EN { get; set; } = string.Empty;
             public string CoverUrl { get; set; } = string.Empty;
             public string SourceFingerprint { get; set; } = string.Empty; // 可选
         }
