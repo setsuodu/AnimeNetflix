@@ -1,0 +1,46 @@
+name: Deploy ReDoc to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Anime.Api/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x' # 根据你项目实际版本调整
+
+      - name: 生成 openapi.json + Build ReDoc
+        run: |
+          cd Anime.Api
+          dotnet restore
+          dotnet publish -c Release -o /tmp/publish
+          
+          dotnet tool install --global Swashbuckle.AspNetCore.Cli --version 10.1.7
+          # 确保这里的 DLL 路径和版本号正确
+          swagger tofile --output ../openapi.json /tmp/publish/Anime.Api.dll v1
+          
+          cd ..
+          npm install -g @redocly/cli@latest
+          mkdir -p public
+          # 将生成的静态网页放到 public 目录
+          redocly build-docs openapi.json --output public/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          publish_branch: gh-pages  # 绝对不要再用 main！
+          force_orphan: false       # 确保历史记录安全
