@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/解决方案项/">
+    <File Path="docker-compose.yml" />
+    <File Path="Dockerfile" />
+  </Folder>
+  <Project Path="Anime.Api/Anime.Api.csproj" />
+  <Project Path="Anime.Infrastructure/Anime.Infrastructure.csproj" />
+</Solution>

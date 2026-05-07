@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # 数据库容器
+  anime_db:
+    image: postgres:latest
+    container_name: anime_db
+    restart: always
+    ports:
+      - "9432:5432"  # 宿主机 9432，容器 5432
+    environment:
+      POSTGRES_USER: netflix
+      POSTGRES_PASSWORD: netflix
+      POSTGRES_DB: anime_vault
+    volumes:
+      # 重点：右边只写到 /var/lib/postgresql，不加 /data，加了无法启动。
+      - ./postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U netflix -d anime_vault"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s   # 给 Postgres 一点初始化时间
+
+  # API 容器
+  anime_api:
+    image: ghcr.io/setsuodu/animenetflix:latest  # 对应你 build 出来的镜像名
+    container_name: animenetflix
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8060:8060" # 映射 API 访问端口
+    depends_on:
+      anime_db:
+        condition: service_healthy   # 关键！等 healthcheck 通过
+    restart: unless-stopped        # 推荐加上，失败自动重启
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - TZ=Asia/Shanghai
+      # 重点：容器内部通信，Host 要写服务名 anime_db，端口用容器内的 5432
+      - ConnectionStrings__DefaultConnection=Host=anime_db;Port=5432;Database=anime_vault;Username=netflix;Password=netflix

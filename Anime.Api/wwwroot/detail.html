@@ -1,0 +1,254 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer"> <!-- 这行代码的作用是：不管对方服务器多严，它都看不见你是从哪来的，从而把它当成“直接访问”放行。 -->
+    <title>播放详情 - 家庭版 Netflix</title>
+    <!-- 引入 Bootstrap 样式 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- 播放器依赖：hls.js 处理 m3u8，DPlayer 处理交互[cite: 1, 2] -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js/dist/hls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>
+    <style>
+        body {
+            background: #141414;
+            color: white;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        .video-container {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        #dplayer {
+            width: 100%;
+            height: 550px;
+        }
+
+        /* 播放源标签样式 */
+        .source-tabs {
+            margin-top: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .src-btn {
+            margin-right: 10px;
+            border-radius: 20px;
+            padding: 5px 20px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .active-source {
+            background: #e50914 !important;
+            border-color: #e50914 !important;
+            color: white !important;
+        }
+
+        /* 集数列表样式 */
+        .ep-list-wrapper {
+            background: #1f1f1f;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .ep-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .ep-btn {
+            background: #2b2b2b;
+            border: 1px solid #444;
+            color: #ccc;
+            padding: 8px 5px;
+            font-size: 13px;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+            .ep-btn:hover {
+                background: #3d3d3d;
+                color: #fff;
+                border-color: #666;
+            }
+
+        .active-ep {
+            background: #e50914 !important;
+            color: white !important;
+            border-color: #e50914 !important;
+            box-shadow: 0 0 10px rgba(229, 9, 20, 0.4);
+        }
+
+        .anime-info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: #aaa;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+            .back-link:hover {
+                color: #fff;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="container py-4">
+        <!-- 顶部导航 -->
+        <div class="anime-info-header">
+            <a href="index.html" class="back-link">← 返回首页</a>
+            <h4 id="anime-title" class="text-truncate" style="max-width: 70%;">正在加载...</h4>
+        </div>
+
+        <!-- 播放器区域 -->
+        <div class="video-container">
+            <div id="dplayer"></div>
+        </div>
+
+        <!-- 播放源切换 -->
+        <div class="source-tabs">
+            <button id="btn-src1" class="btn btn-outline-secondary src-btn active-source" onclick="switchSource(1)">线路一 (主线)</button>
+            <button id="btn-src2" class="btn btn-outline-secondary src-btn" onclick="switchSource(2)">线路二 (备用)</button>
+        </div>
+
+        <!-- 集数选择 -->
+        <div class="ep-list-wrapper">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">剧集列表</h6>
+                <small id="ep-count" class="text-secondary">共 0 集</small>
+            </div>
+            <div id="ep-grid" class="ep-grid">
+                <!-- JS 动态注入 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        const animeId = urlParams.get('id');
+        let animeData = null;
+        let dp = null;
+
+        // 初始化页面
+        async function init() {
+            if (!animeId) {
+                alert("未找到番剧 ID");
+                location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/netflix/${animeId}`);
+                if (!res.ok) throw new Error("获取详情失败");
+                animeData = await res.json();
+
+                document.getElementById('anime-title').innerText = animeData.title;
+                document.title = `${animeData.title} - 在线播放`;
+
+                // 默认加载线路 1
+                switchSource(1);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('anime-title').innerText = "加载失败，请检查数据库连接";
+            }
+        }
+
+        // 切换播放源逻辑[cite: 2]
+        function switchSource(srcNum) {
+            // 样式切换
+            const btn1 = document.getElementById('btn-src1');
+            const btn2 = document.getElementById('btn-src2');
+
+            if (srcNum === 1) {
+                btn1.classList.add('active-source');
+                btn2.classList.remove('active-source');
+            } else {
+                btn2.classList.add('active-source');
+                btn1.classList.remove('active-source');
+            }
+
+            // 获取对应的 URL 字符串
+            const rawData = srcNum === 1 ? animeData.playUrls : animeData.backupUrls;
+            const grid = document.getElementById('ep-grid');
+
+            if (!rawData || rawData.trim() === "") {
+                grid.innerHTML = '<div class="text-secondary p-3">该线路暂无可用资源</div>';
+                document.getElementById('ep-count').innerText = "共 0 集";
+                return;
+            }
+
+            // 解析格式: 第01集$url#第02集$url[cite: 2]
+            const episodes = rawData.split('#').filter(x => x.includes('$')).map(item => {
+                const parts = item.split('$');
+                return { name: parts[0], url: parts[1] };
+            });
+
+            document.getElementById('ep-count').innerText = `共 ${episodes.length} 集`;
+
+            // 渲染集数按钮
+            grid.innerHTML = episodes.map((ep, index) => `
+                <div class="ep-btn" onclick="playVideo('${ep.url}', this)">${ep.name}</div>
+            `).join('');
+
+            // 自动播放第一集
+            if (episodes.length > 0) {
+                playVideo(episodes[0].url, grid.firstElementChild);
+            }
+        }
+
+        // 执行播放[cite: 1, 2]
+        function playVideo(videoUrl, element) {
+            // 更新 UI 状态
+            document.querySelectorAll('.ep-btn').forEach(btn => btn.classList.remove('active-ep'));
+            if (element) element.classList.add('active-ep');
+
+            // 销毁旧播放器防止内存溢出
+            if (dp) {
+                dp.destroy();
+            }
+
+            // 初始化 DPlayer[cite: 1]
+            dp = new DPlayer({
+                container: document.getElementById('dplayer'),
+                autoplay: true,
+                theme: '#e50914',
+                loop: false,
+                lang: 'zh-cn',
+                screenshot: true,
+                hotkey: true,
+                video: {
+                    url: videoUrl,
+                    type: 'hls' // 强制使用 HLS 模式解析 m3u8[cite: 1]
+                }
+            });
+
+            // 错误处理：如果线路挂了
+            dp.on('error', function () {
+                console.log('视频加载失败，请尝试切换线路');
+            });
+        }
+
+        // 启动
+        init();
+    </script>
+
+</body>
+</html>

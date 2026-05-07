@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>我的私人番剧站</title>
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background: #141414;
+            color: white;
+        }
+
+        .anime-card {
+            cursor: pointer;
+            transition: 0.3s;
+            margin-bottom: 20px;
+        }
+
+            .anime-card:hover {
+                transform: scale(1.05);
+                color: #ff679a;
+            }
+
+            .anime-card img {
+                width: 100%;
+                height: 250px;
+                object-fit: cover;
+                border-radius: 8px;
+                background: #222;
+            }
+
+        .anime-title {
+            font-size: 13px;
+            margin-top: 8px;
+            text-align: center;
+            height: 40px;
+            overflow: hidden;
+        }
+
+        .btn-more {
+            background: #ff679a;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="text-danger">最新更新</h3>
+            <input id="search" class="form-control w-25 bg-dark text-white border-secondary" placeholder="搜索...">
+        </div>
+
+        <div class="row" id="list"></div>
+
+        <div class="text-center my-5">
+            <button id="loadMore" class="btn-more">查看更多 (加载中...)</button>
+        </div>
+    </div>
+
+    <script>
+        let page = 1;
+        const listDiv = document.getElementById('list');
+        const searchInput = document.getElementById('search');
+        const loadMoreBtn = document.getElementById('loadMore');
+
+        async function fetchAnimes(isAppend = false) {
+            const res = await fetch(`/api/netflix?page=${page}&pageSize=30&search=${searchInput.value}`);
+            const data = await res.json();
+
+            const html = data.map(item => `
+                    <div class="col-6 col-md-3 col-lg-2">
+                        <div class="anime-card" onclick="location.href='detail.html?id=${item.id}'">
+                            <img src="${item.coverUrl || '/images/default_cover.jpg'}" onerror="this.src='/images/default_cover.jpg';">
+                            <div class="anime-title">${item.title}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+            if (isAppend) listDiv.innerHTML += html;
+            else listDiv.innerHTML = html;
+
+            loadMoreBtn.innerText = data.length < 30 ? "没有更多了" : "查看更多";
+        }
+
+        loadMoreBtn.onclick = () => {
+            page++;
+            fetchAnimes(true);
+        };
+
+        searchInput.oninput = () => {
+            page = 1;
+            fetchAnimes(false);
+        };
+
+        fetchAnimes();
+    </script>
+</body>
+</html>
