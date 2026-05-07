@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'Anime.Api/**'          # 只在改 Anime.Api 时触发
+      - 'Anime.Api/**'
   workflow_dispatch:
 
 jobs:
@@ -12,48 +12,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup .NET 10
+      - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      # === 关键：先清理 + 完整还原 + 构建 ===
-      - name: Clean + Restore + Build
+      # === 极简版：只 restore，不强求 build ===
+      - name: Restore
         run: |
-          dotnet clean
           dotnet restore
-          dotnet build Anime.Api/Anime.Api.csproj --configuration Release --no-restore
 
-      # === 关键：动态找 DLL（避免路径写死出问题）===
+      # === 调试 DLL ===
+      - name: Debug - List files
+        run: |
+          echo "=== 项目文件结构 ==="
+          ls -la Anime.Api/
+          find Anime.Api -name "*.csproj" || true
+          echo "=== bin 目录 ==="
+          ls -R Anime.Api/bin 2>/dev/null || echo "bin 目录不存在"
+
+      # === 安装 CLI 并尝试生成 ===
       - name: Generate openapi.json
         run: |
-          echo "=== 查找生成的 DLL ==="
-          find Anime.Api/bin -name "*.dll" | head -10
+          echo "=== 安装 Swashbuckle CLI ==="
+          dotnet tool install --global Swashbuckle.AspNetCore.Cli --version 10.1.7 || true
           
-          DLL_PATH=$(find Anime.Api/bin/Release -name "Anime.Api.dll" | head -1)
-          if [ -z "$DLL_PATH" ]; then
-            echo "❌ 没找到 Anime.Api.dll"
-            ls -R Anime.Api/bin/Release
-            exit 1
-          fi
-          
-          echo "✅ 使用 DLL: $DLL_PATH"
-          dotnet tool install --global Swashbuckle.AspNetCore.Cli --version 8.0.0 || true
-          
-          dotnet swagger tofile --output openapi.json "$DLL_PATH" v1 || {
-            echo "❌ swagger 生成失败，尝试备用路径..."
-            # 备用：直接用 net10.0 文件夹
-            dotnet swagger tofile --output openapi.json Anime.Api/bin/Release/net10.0/Anime.Api.dll v1
-          }
+          echo "=== 尝试生成 ==="
+          # 先试常见路径
+          dotnet swagger tofile --output openapi.json Anime.Api/bin/Debug/net10.0/Anime.Api.dll v1 || \
+          dotnet swagger tofile --output openapi.json Anime.Api/bin/Release/net10.0/Anime.Api.dll v1 || \
+          echo "❌ 所有路径都失败" && exit 1
 
-      - name: Commit & Push openapi.json
+      - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add openapi.json || true
-          git commit -m "chore: update openapi.json [skip ci]" || echo "No changes to commit"
-          git push
+          git commit -m "chore: update openapi.json via CI [skip ci]" || echo "No changes"
+          git push || true
