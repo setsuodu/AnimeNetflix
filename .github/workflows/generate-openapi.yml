@@ -5,12 +5,14 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'Anime.Api/**'          # 只在改 Anime.Api 时触发
-  workflow_dispatch:           # 手动触发测试
+      - 'Anime.Api/**'
+  workflow_dispatch:
 
 jobs:
   generate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 必须有写权限才能把生成的 json push 回仓库
 
     steps:
       - name: Checkout code
@@ -23,44 +25,40 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # === 关键修复：明确指定 Anime.Api.csproj（解决 MSB1011 多项目错误）===
-      - name: Restore
+      # === 关键修复：直接 Publish 到固定目录，消灭路径不确定的问题 ===
+      - name: Build and Publish Project
         run: |
-          echo "=== dotnet restore 开始（指定 Anime.Api.csproj）==="
-          dotnet restore Anime.Api/Anime.Api.csproj
+          echo "=== 开始编译并发布项目 ==="
+          dotnet publish Anime.Api/Anime.Api.csproj -c Release -o ./publish_output
 
-      # === 调试项目结构 ===
-      - name: Debug - Show project structure
-        run: |
-          echo "=== 根目录文件 ==="
-          ls -la
-          echo "=== Anime.Api 目录 ==="
-          ls -la Anime.Api/
-          echo "=== 所有 csproj 文件 ==="
-          find . -name "*.csproj"
-          echo "=== bin 目录 ==="
-          ls -R Anime.Api/bin 2>/dev/null || echo "bin 目录不存在"
-
-      # === 生成 openapi.json ===
       - name: Generate openapi.json
         run: |
           echo "=== 安装 Swashbuckle CLI ==="
           dotnet tool install --global Swashbuckle.AspNetCore.Cli --version 10.1.7 || true
           
-          echo "=== 开始生成 openapi.json ==="
+          # 必须把 dotnet tools 加到环境变量，否则找不到 swagger 命令
+          export PATH="$PATH:$HOME/.dotnet/tools"
           
-          # 多个路径尝试（Debug 和 Release 都试）
-          dotnet swagger tofile --output openapi.json Anime.Api/bin/Debug/net10.0/Anime.Api.dll v1 || \
-          dotnet swagger tofile --output openapi.json Anime.Api/bin/Release/net10.0/Anime.Api.dll v1 || \
-          dotnet swagger tofile --output openapi.json Anime.Api/bin/Debug/net10.0/publish/Anime.Api.dll v1 || \
-          dotnet swagger tofile --output openapi.json Anime.Api/bin/Release/net10.0/publish/Anime.Api.dll v1 || \
-          echo "❌ 所有路径都失败" && exit 1
+          echo "=== 执行 swagger tofile ==="
+          # 使用刚才 publish 出来的固定路径，拒绝猜路径
+          swagger tofile --output openapi.json ./publish_output/Anime.Api.dll v1
 
-      # === 提交 openapi.json ===
-      - name: Commit & Push openapi.json
+      - name: Check if openapi.json exists
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add openapi.json || true
-          git commit -m "chore: update openapi.json via CI [skip ci]" || echo "没有变化"
-          git push || true
+          if [ -f "openapi.json" ]; then
+            echo "✅ openapi.json 生成成功"
+            ls -lh openapi.json
+          else
+            echo "❌ openapi.json 未生成"
+            exit 1
+          fi
+
+      # === 自动将生成的 openapi.json 提交回仓库 ===
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add openapi.json
+          # 如果文件没变化，git commit 会报错，这里加 || true 避免 workflow 挂掉
+          git commit -m "chore: auto update openapi.json [skip ci]" || echo "No changes to commit"
+          git push
