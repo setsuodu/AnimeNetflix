@@ -15,8 +15,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0     # ← 必须有这行
 
       - name: 生成 openapi.json + Build ReDoc
         run: |
