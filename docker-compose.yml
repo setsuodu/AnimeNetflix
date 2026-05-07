@@ -40,3 +40,16 @@ services:
       - TZ=Asia/Shanghai
       # 重点：容器内部通信，Host 要写服务名 anime_db，端口用容器内的 5432
       - ConnectionStrings__DefaultConnection=Host=anime_db;Port=5432;Database=anime_vault;Username=netflix;Password=netflix
+
+  # 新增：Nginx 静态文件服务（封面图）
+  nginx:
+    image: nginx:alpine
+    container_name: anime_nginx
+    restart: unless-stopped
+    ports:
+      - "8061:80"                    # 宿主机用 8080 访问图片（可改）
+    volumes:
+      - /vol1/1000/picture/anime_covers:/usr/share/nginx/html/covers:ro   # 关键：挂载你的封面目录
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro                    # 可选，自定义配置
+    depends_on:
+      - anime_api

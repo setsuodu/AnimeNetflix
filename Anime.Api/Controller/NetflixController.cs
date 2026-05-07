@@ -176,5 +176,50 @@ namespace Anime.Api.Controllers
                 return StatusCode(500, $"导出失败: {ex.Message}");
             }
         }
+
+        // https://localhost:8060/api/netflix/import-covers
+        [HttpPost("import-covers")]
+        /// <summary>
+        /// 【临时】manus 爬取的封面导入SQL
+        /// </summary>
+        /// <param name="imports"></param>
+        /// <returns></returns>
+        public async Task<IActionResult> ImportCovers([FromBody] List<CoverImportDto> imports)
+        {
+            if (imports == null || imports.Count == 0)
+                return BadRequest("数据为空");
+
+            var updated = 0;
+            foreach (var item in imports)
+            {
+                // 优先用 SourceFingerprint 精确匹配（最稳），其次模糊匹配 Title
+                var anime = await _db.Animes
+                    .FirstOrDefaultAsync(a =>
+                        !string.IsNullOrEmpty(item.SourceFingerprint) && a.SourceFingerprint == item.SourceFingerprint ||
+                        a.Title.Contains(item.Title) || a.Title == item.Title);
+
+                if (anime != null && !string.IsNullOrWhiteSpace(item.CoverUrl))
+                {
+                    anime.CoverUrl = item.CoverUrl;   // 更新封面
+                    if (!string.IsNullOrWhiteSpace(item.Title_JP))
+                        anime.Title = item.Title_JP;  // 可选：更新日文名
+
+                    updated++;
+                }
+            }
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new { Message = $"✅ 成功更新 {updated} 条封面", UpdatedCount = updated });
+        }
+
+        // DTO（加在文件最下面）
+        public class CoverImportDto
+        {
+            public string Title { get; set; } = string.Empty;
+            public string Title_JP { get; set; } = string.Empty;
+            public string CoverUrl { get; set; } = string.Empty;
+            public string SourceFingerprint { get; set; } = string.Empty; // 可选
+        }
     }
 }
