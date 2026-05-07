@@ -43,8 +43,11 @@ namespace Anime.Api.Controllers
             return anime == null ? NotFound() : Ok(anime);
         }
 
-        // 【临时】修复：定义 PlayUrls = 金鹰，BackupUrls = 红牛，没有 m3u8 的补齐
         // https://localhost:8060/api/netflix/maintenance/flush-jinying
+        /// <summary>
+        /// 【临时】修复：定义 PlayUrls = 金鹰，BackupUrls = 红牛，没有 m3u8 的补齐
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("maintenance/flush-jinying")]
         public async Task<IActionResult> FlushJinYingData()
         {
@@ -106,8 +109,11 @@ namespace Anime.Api.Controllers
             });
         }
 
-        // 【临时】“全量导出”接口，找manus拉
         // https://localhost:8060/api/netflix/export-for-manus
+        /// <summary>
+        /// 【临时】“全量导出”接口，找manus拉
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("export-for-manus")]
         public async Task<IActionResult> ExportForManus()
         {
@@ -125,8 +131,15 @@ namespace Anime.Api.Controllers
             return Ok(allData);
         }
 
-        // 【常驻】到出 SQL 成 json，迁移备份
         // https://localhost:8060/api/netflix/export-seed
+        /// <summary>
+        /// 【常驻】到出 SQL 成 json，迁移备份
+        /// </summary>
+        /// <remarks>
+        /// 调用后会在项目目录生成 seed.json 文件，包含所有动漫信息。
+        /// 新部署时 Program.cs 会自动读取这个文件进行 Seed 操作。
+        /// </remarks>
+        /// <returns>导出结果</returns>
         [HttpGet("export-seed")]
         public async Task<IActionResult> ExportSeedJson()
         {
