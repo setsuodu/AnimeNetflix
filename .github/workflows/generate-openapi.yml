@@ -23,22 +23,22 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # === 极简：只 restore，不 build ===
+      # === 关键修复：明确指定 Anime.Api.csproj（解决 MSB1011 多项目错误）===
       - name: Restore
         run: |
-          echo "=== dotnet restore 开始 ==="
-          dotnet restore
+          echo "=== dotnet restore 开始（指定 Anime.Api.csproj）==="
+          dotnet restore Anime.Api/Anime.Api.csproj
 
-      # === 调试：打印所有文件位置 ===
+      # === 调试项目结构 ===
       - name: Debug - Show project structure
         run: |
           echo "=== 根目录文件 ==="
           ls -la
           echo "=== Anime.Api 目录 ==="
           ls -la Anime.Api/
-          echo "=== 查找所有 dll ==="
-          find . -name "*.dll" | head -20 || true
-          echo "=== bin 目录详细 ==="
+          echo "=== 所有 csproj 文件 ==="
+          find . -name "*.csproj"
+          echo "=== bin 目录 ==="
           ls -R Anime.Api/bin 2>/dev/null || echo "bin 目录不存在"
 
       # === 生成 openapi.json ===
@@ -47,16 +47,16 @@ jobs:
           echo "=== 安装 Swashbuckle CLI ==="
           dotnet tool install --global Swashbuckle.AspNetCore.Cli --version 10.1.7 || true
           
-          echo "=== 尝试生成 openapi.json ==="
+          echo "=== 开始生成 openapi.json ==="
           
-          # 多个常见路径尝试
+          # 多个路径尝试（Debug 和 Release 都试）
           dotnet swagger tofile --output openapi.json Anime.Api/bin/Debug/net10.0/Anime.Api.dll v1 || \
           dotnet swagger tofile --output openapi.json Anime.Api/bin/Release/net10.0/Anime.Api.dll v1 || \
           dotnet swagger tofile --output openapi.json Anime.Api/bin/Debug/net10.0/publish/Anime.Api.dll v1 || \
           dotnet swagger tofile --output openapi.json Anime.Api/bin/Release/net10.0/publish/Anime.Api.dll v1 || \
-          echo "❌ 所有路径失败" && exit 1
+          echo "❌ 所有路径都失败" && exit 1
 
-      # === 提交 ===
+      # === 提交 openapi.json ===
       - name: Commit & Push openapi.json
         run: |
           git config user.name "github-actions[bot]"
