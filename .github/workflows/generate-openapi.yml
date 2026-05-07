@@ -13,8 +13,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -22,7 +20,10 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Install Swashbuckle CLI
-        run: dotnet tool install --global Swashbuckle.AspNetCore.Cli
+        run: dotnet tool install --global Swashbuckle.AspNetCore.Cli || echo "Already installed"
+
+      - name: Restore tools
+        run: dotnet tool restore
 
       - name: Build
         run: dotnet build Anime.Api/Anime.Api.csproj --configuration Release
