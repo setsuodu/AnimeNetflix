@@ -25,15 +25,14 @@ services:
   anime_api:
     image: ghcr.io/setsuodu/animenetflix:latest
     container_name: animenetflix
+    user: root 
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "8060:8060" # 映射 API 访问端口
-    volumes:
-      # ★ 核心改动：使用具名卷 anime_static。
-      # 当你全删掉重来时，它会自动把镜像里 publish 出来的 index.html 同步进去，不会报 404
-      - anime_static:/app/wwwroot
+    #volumes:
+    #  - ./Anime.Api/wwwroot:/app/wwwroot  # 空的，映射不出来
     depends_on:
       anime_db:
         condition: service_healthy   # 关键！等 healthcheck 通过
@@ -64,4 +63,3 @@ services:
 # ★ 声明具名卷，由 Docker 自动管理
 volumes:
   anime_static: 
-  postgres_data:
