@@ -19,8 +19,6 @@ RUN dotnet publish "Anime.Api.csproj" -c Release -o /app/publish \
     /p:FileVersion=$VERSION \
     /p:InformationalVersion=$VERSION
 
-RUN dotnet publish "Anime.Api.csproj" -c Release -o /app/publish
-
 # 4. 生成运行镜像
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 
