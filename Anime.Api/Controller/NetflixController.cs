@@ -44,11 +44,11 @@ namespace Anime.Api.Controllers
         }
 
         // https://localhost:8060/api/netflix/maintenance/flush-jinying
-        [HttpGet("maintenance/flush-jinying")]
         /// <summary>
         /// 【临时】修复：定义 PlayUrls = 金鹰，BackupUrls = 红牛，没有 m3u8 的补齐
         /// </summary>
         /// <returns></returns>
+        [HttpGet("maintenance/flush-jinying")]
         public async Task<IActionResult> FlushJinYingData()
         {
             _db.Database.SetCommandTimeout(TimeSpan.FromSeconds(120));
@@ -110,11 +110,11 @@ namespace Anime.Api.Controllers
         }
 
         // https://localhost:8060/api/netflix/export-for-manus
-        [HttpGet("export-for-manus")]
         /// <summary>
         /// 【临时】“全量导出”接口，找manus拉
         /// </summary>
         /// <returns></returns>
+        [HttpGet("export-for-manus")]
         public async Task<IActionResult> ExportForManus()
         {
             var allData = await _db.Animes
@@ -133,7 +133,6 @@ namespace Anime.Api.Controllers
         }
 
         // https://localhost:8060/api/netflix/export-seed
-        [HttpGet("export-seed")]
         /// <summary>
         /// 【常驻】到出 SQL 成 json，迁移备份
         /// </summary>
@@ -142,6 +141,7 @@ namespace Anime.Api.Controllers
         /// 新部署时 Program.cs 会自动读取这个文件进行 Seed 操作。
         /// </remarks>
         /// <returns>导出结果</returns>
+        [HttpGet("export-seed")]
         public async Task<IActionResult> ExportSeedJson()
         {
             try
@@ -179,12 +179,12 @@ namespace Anime.Api.Controllers
         }
 
         // https://localhost:8060/api/netflix/import-covers
-        [HttpPost("import-covers")]
         /// <summary>
         /// 【临时】manus 爬取的封面导入SQL
         /// </summary>
         /// <param name="imports"></param>
         /// <returns></returns>
+        [HttpPost("import-covers")]
         public async Task<IActionResult> ImportCovers([FromBody] List<CoverImportDto> imports)
         {
             if (imports == null || imports.Count == 0)
@@ -205,7 +205,7 @@ namespace Anime.Api.Controllers
                     if (!string.IsNullOrWhiteSpace(item.Title_JP))
                         anime.Title = item.Title_JP;  // 可选：更新日文名
                     if (!string.IsNullOrWhiteSpace(item.Title_EN))
-                        anime.Title = item.Title_JP;  // 可选：更新英文名
+                        anime.Title = item.Title_EN;  // 可选：更新英文名
 
                     updated++;
                 }

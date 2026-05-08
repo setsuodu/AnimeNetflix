@@ -24,6 +24,13 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
+	// 获取 XML 文件名（通常与项目名同名）
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    
+    // 关键：告诉 Swagger 去读这个文件
+    options.IncludeXmlComments(xmlPath);
+	
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "AnimeNetflix 自宅影院 API",
