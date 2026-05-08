@@ -49,12 +49,29 @@ def light_clean(title):
     return re.sub(r'\s+', ' ', t).strip()
 
 def pinyin_convert(text):
+    """进阶驼峰转换：16bit的感动 -> 16bitDeGanDong，91天 -> 91Tian"""
     if not text: return ""
     if not re.search(r'[\u4e00-\u9fa5]', text):
         return text
-    pinyin_list = pinyin(text, style=Style.FIRST_LETTER)
-    pinyin_str = ''.join([item[0].upper() for item in pinyin_list if item[0].isalpha()])
-    return pinyin_str
+    
+    # 将文本切分为汉字块和非汉字块
+    tokens = re.findall(r'[\u4e00-\u9fa5]+|[a-zA-Z0-9]+', text)
+    result = []
+    
+    for token in tokens:
+        if re.match(r'[\u4e00-\u9fa5]+', token):
+            # 汉字块：转为首字母大写的全拼
+            py_list = pinyin(token, style=Style.NORMAL)
+            result.extend([w[0].capitalize() for w in py_list])
+        else:
+            # 英文数字块：保留原样，如果是纯小写英文则首字母大写美化
+            if token.islower() and not token.isdigit():
+                result.append(token.capitalize())
+            else:
+                result.append(token)
+                
+    clean_name = "".join(result)
+    return clean_name or "AnimeCover"
 
 def short_clean(title):
     match = re.match(r'([^\\s:：—~～,，。！？!？]+)', title)
@@ -104,10 +121,10 @@ def fetch_wikipedia(search_term):
         
         for res in r.json().get("query", {}).get("search", []):
             title = res.get("title", "")
-            # 修改：增加 rvprop=content 以抓取 Infobox 源码
+            # 迭代需求：解析 Infobox 源码获取罗马音
             page_info_r = requests.get("https://zh.wikipedia.org/w/api.php", params={
                 "action": "query", "format": "json", "titles": title,
-                "prop": "langlinks|pageimages|extracts|revisions", "rvprop": "content", 
+                "prop": "langlinks|pageimages|extracts|revisions", "rvprop": "content",
                 "lllimit": 50, "piprop": "original", "redirects": 1, "explaintext": 1
             }, timeout=15, headers=HEADERS)
 
@@ -116,22 +133,20 @@ def fetch_wikipedia(search_term):
             page = list(page_data.values())[0]
             
             jp_title, en_title = "", ""
-            # 尝试从语言链接找英文名
             for l in page.get("langlinks", []):
                 if l["lang"] == "ja": jp_title = l["*"]
                 if l["lang"] == "en": en_title = l["*"]
             
-            # --- 核心迭代：解析 Infobox 里的罗马音/英文名 ---
+            # 从 Infobox 源代码中正则提取
             if "revisions" in page:
                 wikitext = page["revisions"][0]["*"]
-                # 匹配罗马字或英文名称字段
-                romaji_match = re.search(r'\|\s*(?:罗马字|罗马字|romaji)\s*=\s*(.*?)\s*[\|\}\n]', wikitext)
+                romaji_match = re.search(r'\|\s*(?:罗马字|罗马字|romaji|transliteration)\s*=\s*(.*?)\s*[\|\}\n]', wikitext)
                 if romaji_match:
                     en_title = romaji_match.group(1).strip()
                 elif not en_title:
-                    eng_name_match = re.search(r'\|\s*(?:英文名称|english_title)\s*=\s*(.*?)\s*[\|\}\n]', wikitext)
-                    if eng_name_match:
-                        en_title = eng_name_match.group(1).strip()
+                    eng_match = re.search(r'\|\s*(?:英文名称|english_title|eng_name)\s*=\s*(.*?)\s*[\|\}\n]', wikitext)
+                    if eng_match:
+                        en_title = eng_match.group(1).strip()
 
             return {
                 "source": "Wikipedia",
@@ -183,19 +198,17 @@ def process_item(item_index, all_data_list):
     log(f"开始处理 | {orig_title}", "PROCESS")
     info = None
 
-    # 尝试不同来源 (保持原有顺序)
+    # 严格保持原有顺序
     for func in [fetch_wikipedia, fetch_bangumi, fetch_anilist]:
         info = func(search_term)
         if info and info.get('image'): break
 
-    # 更新数据
     if info:
         item_data['title_JP'] = info.get('JP')
         item_data['title_EN'] = info.get('EN')
         
-        # --- 核心迭代：判断保存图片的名字是否是英文，不是则强转拼音 ---
+        # 迭代：判断并强转拼音逻辑
         en_candidate = info.get('EN', '')
-        # 如果检测到中文字符，哪怕是 API 返回的 EN 字段，也要强转拼音作为文件名
         if re.search(r'[\u4e00-\u9fa5]', en_candidate):
             file_base = pinyin_convert(orig_title)
         else:
@@ -207,7 +220,7 @@ def process_item(item_index, all_data_list):
             item_data['coverFile'] = f"covers/{filename}"
             item_data['coverURL'] = info['image']
 
-    # 强制清理英文名中的中文 (保持原有清理逻辑)
+    # 保持原有清理逻辑
     if item_data.get('title_EN'):
         item_data["title_EN"] = re.sub(r'[\u4e00-\u9fa5]', '', item_data["title_EN"]).strip()
 
@@ -254,3 +267,6 @@ def main():
                 log(f"❌ [{completed_count}/{total}] 索引 {idx} 处理失败: {title}", "PROGRESS")
 
     log("🎉 所有条目处理完毕！", "SUMMARY")
+
+if __name__ == "__main__":
+    main()
