@@ -76,7 +76,7 @@
             const html = data.map(item => `
                     <div class="col-6 col-md-3 col-lg-2">
                         <div class="anime-card" onclick="location.href='detail.html?id=${item.id}'">
-                            <img src="http://192.168.1.198:8061/${item.coverUrl || '/images/default_cover.jpg'}" onerror="this.src='/images/default_cover.jpg';">
+                            <img src="http://192.168.1.198:8061/${item.coverUrl || 'http://192.168.1.198:8060/images/default_cover.jpg'}" onerror="this.src='/images/default_cover.jpg';">
                             <div class="anime-title">${item.title}</div>
                         </div>
                     </div>
