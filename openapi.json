@@ -89,6 +89,7 @@
         "tags": [
           "Netflix"
         ],
+        "summary": "【临时】“全量导出”接口，找manus拉",
         "responses": {
           "200": {
             "description": "OK"
@@ -101,6 +102,8 @@
         "tags": [
           "Netflix"
         ],
+        "summary": "【常驻】到出 SQL 成 json，迁移备份",
+        "description": "调用后会在项目目录生成 seed.json 文件，包含所有动漫信息。\n新部署时 Program.cs 会自动读取这个文件进行 Seed 操作。",
         "responses": {
           "200": {
             "description": "OK"
@@ -113,7 +116,9 @@
         "tags": [
           "Netflix"
         ],
+        "summary": "【临时】manus 爬取的封面导入SQL",
         "requestBody": {
+          "description": "",
           "content": {
             "application/json": {
               "schema": {
@@ -153,6 +158,7 @@
         "tags": [
           "Netflix"
         ],
+        "summary": "【临时】修复：定义 PlayUrls = 金鹰，BackupUrls = 红牛，没有 m3u8 的补齐",
         "responses": {
           "200": {
             "description": "OK"
