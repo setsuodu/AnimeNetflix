@@ -178,8 +178,14 @@ def process_item(item_index, all_data_list):
         item_data['title_JP'] = info.get('JP')
         item_data['title_EN'] = info.get('EN')
         
-        # 确定文件名
-        file_base = info.get('EN') or pinyin_convert(orig_title) or "anime_cover"
+        # --- 迭代：判断保存图片的名字是否是英文，不是则强转拼音 ---
+        en_candidate = info.get('EN', '')
+        # 如果含有中文，则强制使用拼音
+        if re.search(r'[\u4e00-\u9fa5]', en_candidate):
+            file_base = pinyin_convert(orig_title)
+        else:
+            file_base = en_candidate or pinyin_convert(orig_title) or "anime_cover"
+        
         filename = f"{sanitize_filename(file_base)}.jpg"
         
         if info.get('image') and download_image(info['image'], filename):
