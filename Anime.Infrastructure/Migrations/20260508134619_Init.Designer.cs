@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Anime.Infrastructure.Migrations
 {
     [DbContext(typeof(AnimeDbContext))]
-    [Migration("20260507152724_AddJapaneseAndEnglishNamesToAnimeInfo")]
-    partial class AddJapaneseAndEnglishNamesToAnimeInfo
+    [Migration("20260508134619_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

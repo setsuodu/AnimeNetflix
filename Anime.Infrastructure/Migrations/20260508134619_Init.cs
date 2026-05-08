@@ -19,6 +19,8 @@ namespace Anime.Infrastructure.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    JapaneseTitle = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    EnglishTitle = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     CoverUrl = table.Column<string>(type: "text", nullable: false),
                     SourceFingerprint = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     PlayUrls = table.Column<string>(type: "text", nullable: false),
