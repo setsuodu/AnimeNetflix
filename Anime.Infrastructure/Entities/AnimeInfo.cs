@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Anime.Infrastructure.Entities
@@ -17,6 +18,9 @@ namespace Anime.Infrastructure.Entities
 
         [MaxLength(200)]
         public string EnglishTitle { get; set; } = string.Empty;    // ← 新增：英文名
+
+        [MaxLength(50)]
+        public string Episodes { get; set; } = string.Empty;   // ← 集数 [第13集]
 
         // 在 AnimeInfo.cs 中添加
         public string CoverUrl { get; set; } = string.Empty;

@@ -1,4 +1,5 @@
 ﻿using Anime.Infrastructure.Context;
+using Anime.Infrastructure.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -225,5 +226,64 @@ namespace Anime.Api.Controllers
             public string CoverUrl { get; set; } = string.Empty;
             public string SourceFingerprint { get; set; } = string.Empty; // 可选
         }
+
+        // https://localhost:8060/api/netflix/update-from-json
+        /// <summary>
+        /// 从 Manus_V2 的 JSON 补全 title_JP、title_EN、coverFile（只更新，不插入）
+        /// </summary>
+        [HttpPost("update-from-json")]
+        public async Task<IActionResult> UpdateFromJson([FromBody] string? jsonPath = null)
+        {
+            jsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "anime_list_final_fixed.json");
+
+            if (!System.IO.File.Exists(jsonPath))
+            {
+                return BadRequest($"JSON 文件不存在: {jsonPath}");
+            }
+
+            var json = await System.IO.File.ReadAllTextAsync(jsonPath);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var data = JsonSerializer.Deserialize<List<AnimeJsonItem>>(json, options);
+
+            if (data == null || data.Count == 0)
+                return BadRequest("JSON 数据为空");
+
+            int updated = 0;
+            foreach (var item in data)
+            {
+                var title = item.title?.Trim();
+                if (string.IsNullOrEmpty(title)) continue;
+
+                var jp = item.title_JP?.Trim() ?? "";
+                var en = item.title_EN?.Trim() ?? "";
+                var cover = item.coverFile?.Trim() ?? item.coverURL?.Trim() ?? "";
+
+                var affected = await _db.Animes
+                    .Where(a => a.Title == title)
+                    .ExecuteUpdateAsync(sp => sp
+                        .SetProperty(a => a.JapaneseTitle, a => string.IsNullOrEmpty(jp) ? a.JapaneseTitle : jp)
+                        .SetProperty(a => a.EnglishTitle, a => string.IsNullOrEmpty(en) ? a.EnglishTitle : en)
+                        .SetProperty(a => a.CoverUrl, a => string.IsNullOrEmpty(cover) ? a.CoverUrl : cover)
+                        .SetProperty(a => a.UpdateTime, DateTime.UtcNow)
+                    );
+
+                if (affected > 0) updated++;
+            }
+
+            await _db.SaveChangesAsync();   // 确保
+
+            Console.WriteLine($"✅ 从 JSON 更新完成，共更新 {updated} 条记录");
+            return Ok(new { message = "更新完成", updatedCount = updated, totalProcessed = data.Count });
+        }
+    }
+
+    // 辅助模型（只映射你需要的字段）
+    public class AnimeJsonItem
+    {
+        public string? title { get; set; }
+        public string? title_JP { get; set; }
+        public string? title_EN { get; set; }
+        public string? coverFile { get; set; }
+        public string? coverURL { get; set; }
     }
 }

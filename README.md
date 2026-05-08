@@ -50,7 +50,7 @@ dotnet ef migrations add Init -p Anime.Infrastructure -s Anime.Api
 5. 单拉起干净的数据库环境
 docker-compose up -d anime_db
 
-6. 更新数据库
+6. 更新数据库（等等👆容器起来再执行）
 dotnet ef database update -p Anime.Infrastructure -s Anime.Api
 
 > 报红色的：Failed executing DbCommand ,,,, CommandTimeout='30' 是正常的
@@ -65,11 +65,10 @@ dotnet ef database update -p Anime.Infrastructure -s Anime.Api
 
 ## 部署
 
-1. Dockerfile
+1. 更新镜像
 
 ```
-docker run --name anime_db -p:9432:5432 postgres:latest
-docker run --name netflix -p:8060:8060 ghcr.io/setsuodu/animenetflix:latest
+docker pull ghcr.io/setsuodu/animenetflix:latest
 ```
 
 2. docker-compose

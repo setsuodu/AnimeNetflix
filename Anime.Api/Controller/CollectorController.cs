@@ -19,6 +19,10 @@ namespace Anime.Api.Controllers
         }
 
         // https://localhost:8060/api/collector/run
+        /// <summary>
+        /// 开始爬取金鹰资源|日本动画
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("run")]
         public async Task<IActionResult> Run()   // 改成 async Task 更好
         {

@@ -46,8 +46,13 @@ public class CrawlerService
 
                     if (existing != null)
                     {
+                        var oldTitle = existing.Title; // 瑞克和莫蒂：日漫版 [第10集]
+                        var (baseTitle, episodePart) = SplitTitle(oldTitle);
+
                         // --- 发现老数据：执行覆盖更新，同步标题和集数 ---
-                        existing.Title = item.Title;      // 关键：[第4集] 变 [第5集]
+                        existing.Title = baseTitle;
+                        existing.Episodes = episodePart;
+
                         existing.PlayUrls = detail.Play1;
                         existing.BackupUrls = detail.Play2;
 
@@ -59,14 +64,18 @@ public class CrawlerService
                         existing.UpdateTime = DateTime.UtcNow;
 
                         await db.SaveChangesAsync();
-                        Console.WriteLine($"[更新] {item.Title}");
+                        Console.WriteLine($"[更新] {item.Title} {i}/{total}");
                     }
                     else
                     {
+                        var oldTitle = item.Title;
+                        var (baseTitle, episodePart) = SplitTitle(oldTitle);
+
                         // --- 发现新数据：执行入库 ---
                         db.Animes.Add(new AnimeInfo
                         {
-                            Title = item.Title,
+                            Title = baseTitle,
+                            Episodes = episodePart,
                             JapaneseTitle = string.Empty, // 该网站爬不到
                             EnglishTitle = string.Empty, // 该网站爬不到
                             SourceFingerprint = item.Fingerprint,
@@ -93,5 +102,32 @@ public class CrawlerService
             sw.Stop();
             Console.WriteLine($"【爬虫异常】耗时 {sw.Elapsed.TotalSeconds:F2} 秒后发生错误: {ex.Message}");
         }
+    }
+
+    private static (string BaseTitle, string EpisodePart) SplitTitle(string fullTitle)
+    {
+        if (string.IsNullOrWhiteSpace(fullTitle))
+            return (string.Empty, string.Empty);
+
+        // 正则匹配 [第...集]、[完结]、[第xx集完结] 等
+        var regex = new System.Text.RegularExpressions.Regex(
+            @"(\s*\[第.*?集.*?\]|\s*\[完结?\]|\s*\[.*?版.*?\])",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        var match = regex.Match(fullTitle);
+
+        if (match.Success)
+        {
+            string baseTitle = fullTitle.Substring(0, match.Index).Trim();
+            string episodePart = match.Value.Trim();
+
+            // 清理多余空格
+            baseTitle = System.Text.RegularExpressions.Regex.Replace(baseTitle, @"\s+", " ").Trim();
+
+            return (baseTitle, episodePart);
+        }
+
+        // 没有括号的情况，直接返回
+        return (fullTitle.Trim(), "");
     }
 }

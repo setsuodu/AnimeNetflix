@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Anime.Infrastructure.Migrations
 {
     [DbContext(typeof(AnimeDbContext))]
-    [Migration("20260508134619_Init")]
+    [Migration("20260508150311_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -55,6 +55,11 @@ namespace Anime.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Episodes")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("JapaneseTitle")
                         .IsRequired()

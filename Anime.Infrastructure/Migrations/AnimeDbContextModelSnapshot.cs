@@ -53,6 +53,11 @@ namespace Anime.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("Episodes")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<string>("JapaneseTitle")
                         .IsRequired()
                         .HasMaxLength(200)

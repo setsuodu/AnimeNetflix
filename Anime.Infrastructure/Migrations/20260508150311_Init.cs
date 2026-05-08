@@ -21,6 +21,7 @@ namespace Anime.Infrastructure.Migrations
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     JapaneseTitle = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     EnglishTitle = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Episodes = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     CoverUrl = table.Column<string>(type: "text", nullable: false),
                     SourceFingerprint = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     PlayUrls = table.Column<string>(type: "text", nullable: false),
