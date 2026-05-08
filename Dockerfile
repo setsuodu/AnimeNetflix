@@ -30,7 +30,7 @@ ARG BUILD_DATE
 # 设置标签
 LABEL org.opencontainers.image.source="https://github.com/setsuodu/AnimeNetflix"
 LABEL org.opencontainers.image.description="自宅动漫影院"
-LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 WORKDIR /app
