@@ -15,6 +15,7 @@
         "tags": [
           "Collector"
         ],
+        "summary": "开始爬取金鹰资源|日本动画",
         "responses": {
           "200": {
             "description": "OK"
@@ -159,6 +160,38 @@
           "Netflix"
         ],
         "summary": "【临时】修复：定义 PlayUrls = 金鹰，BackupUrls = 红牛，没有 m3u8 的补齐",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Netflix/update-from-json": {
+      "post": {
+        "tags": [
+          "Netflix"
+        ],
+        "summary": "从 Manus_V2 的 JSON 补全 title_JP、title_EN、coverFile（只更新，不插入）",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
