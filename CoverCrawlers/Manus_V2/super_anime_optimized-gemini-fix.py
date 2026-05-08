@@ -220,9 +220,9 @@ def process_item(item_index, all_data_list):
     
     return item_index, bool(info)
 
-# ====================== 主程序 ======================
+# ====================== 主程序 (仅修改进度条和日志标记) ======================
 def main():
-    log("🚀 启动 (Bangumi + Wiki + AniList)", "START")
+    log("🚀 启动 (Wiki + Bangumi + AniList)", "START")
     
     if os.path.exists(OUTPUT_FILE):
         with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
@@ -231,14 +231,26 @@ def main():
         with open(INPUT_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
-    items_to_process = [i for i, item in enumerate(data) if not item.get('coverFile')]
+    # 1. 筛选待处理索引
+    indices_to_process = [i for i, item in enumerate(data) if not item.get('coverFile')]
+    total = len(indices_to_process)
     
+    log(f"📊 任务队列就绪，共计 {total} 个条目待抓取", "INFO")
+
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {executor.submit(process_item, i, data): i for i in items_to_process}
-        for future in tqdm(as_completed(futures), total=len(items_to_process), desc="爬取中"):
-            pass
+        futures = {executor.submit(process_item, i, data): i for i in indices_to_process}
+        
+        # 2. 改进进度显示
+        completed_count = 0
+        for future in tqdm(as_completed(futures), total=total, desc="爬取进度"):
+            completed_count += 1
+            idx, success = future.result()
+            title = data[idx].get('title', 'Unknown')
+            
+            # 3. 改进日志标记：用 ✅/❌ 且带上 [当前/总数]
+            if success:
+                log(f"✅ [{completed_count}/{total}] 索引 {idx} 处理成功: {title}", "PROGRESS")
+            else:
+                log(f"❌ [{completed_count}/{total}] 索引 {idx} 处理失败: {title}", "PROGRESS")
 
-    log("🎉 任务完成", "SUMMARY")
-
-if __name__ == "__main__":
-    main()
+    log("🎉 所有条目处理完毕！", "SUMMARY")
