@@ -36,7 +36,7 @@ AnimeNetflix/                        <-- 根目录 (docker-compose & Dockerfile 
 D:\GitHub\[Workspace]\AnimeNetflix\
 
 2. 确保停止并移除所有残留容器、网络
-docker-compose down
+docker compose down
 
 3. 手动删掉这个已经由于 Drop 导致损坏的数据目录
 
@@ -48,14 +48,14 @@ docker-compose down
 dotnet ef migrations add Init -p Anime.Infrastructure -s Anime.Api
 
 5. 单拉起干净的数据库环境
-docker-compose up -d anime_db
+docker compose up -d anime_db
 
 6. 更新数据库（等等👆容器起来再执行）
 dotnet ef database update -p Anime.Infrastructure -s Anime.Api
 
 > 报红色的：Failed executing DbCommand ,,,, CommandTimeout='30' 是正常的
 
-7. F5（调试） / docker-compose up -d（拉起容器）
+7. F5（调试） / docker compose up -d（拉起容器）
 
 ## 访问
 
