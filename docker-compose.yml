@@ -47,7 +47,7 @@ services:
     container_name: anime_nginx
     restart: unless-stopped
     ports:
-      - "8061:80"                    # 宿主机用 8080 访问图片（可改）
+      - "8061:80"                    # 宿主机用 8061 访问图片（可改）
     volumes:
       # Windows 测试（推荐使用绝对路径）
       #- D:/vol1/1000/picture/anime_covers:/usr/share/nginx/html/covers:ro
