@@ -87,3 +87,6 @@ docker compose up -d
 
 - [x] 1. docker-compose 第一次自动启动出错，应该是db未完全启动问题；
 - [ ] 2. manus 爬取 cover，英文名，更新数据库；
+- [ ] 3. 自动版本号，没写入；
+- [ ] 4. Docs 格式；
+- [ ] 5. 目录整理；

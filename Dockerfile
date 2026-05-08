@@ -24,6 +24,9 @@ RUN dotnet publish "Anime.Api.csproj" -c Release -o /app/publish
 # 4. 生成运行镜像
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 
+ARG VERSION=1.0.0          # ← 新增这行，默认值
+ARG BUILD_DATE
+
 # 设置标签
 LABEL org.opencontainers.image.source="https://github.com/setsuodu/AnimeNetflix"
 LABEL org.opencontainers.image.description="自宅动漫影院"
