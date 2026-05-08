@@ -6,6 +6,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using System.Text.Json;
 
+if (args.Contains("--version"))
+{
+    var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";
+    Console.WriteLine($"AnimeNetflix v{version}");
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

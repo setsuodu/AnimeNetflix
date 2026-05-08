@@ -10,6 +10,15 @@ RUN dotnet restore "Anime.Api/Anime.Api.csproj"
 # 3. 复制剩余源码并发布
 COPY . .
 WORKDIR "/src/Anime.Api"
+
+# ★★★★★ 使用 GitHub Tag 作为版本 ★★★★★
+ARG VERSION=1.0.0
+RUN dotnet publish "Anime.Api.csproj" -c Release -o /app/publish \
+    /p:Version=$VERSION \
+    /p:AssemblyVersion=$VERSION \
+    /p:FileVersion=$VERSION \
+    /p:InformationalVersion=$VERSION
+
 RUN dotnet publish "Anime.Api.csproj" -c Release -o /app/publish
 
 # 4. 生成运行镜像
