@@ -104,9 +104,11 @@ def fetch_wikipedia(search_term):
         
         for res in r.json().get("query", {}).get("search", []):
             title = res.get("title", "")
+            # 修改：增加 rvprop=content 以抓取 Infobox 源码
             page_info_r = requests.get("https://zh.wikipedia.org/w/api.php", params={
                 "action": "query", "format": "json", "titles": title,
-                "prop": "langlinks|pageimages|extracts", "lllimit": 50, "piprop": "original", "redirects": 1, "explaintext": 1
+                "prop": "langlinks|pageimages|extracts|revisions", "rvprop": "content", 
+                "lllimit": 50, "piprop": "original", "redirects": 1, "explaintext": 1
             }, timeout=15, headers=HEADERS)
 
             page_data = page_info_r.json().get("query", {}).get("pages", {})
@@ -114,10 +116,23 @@ def fetch_wikipedia(search_term):
             page = list(page_data.values())[0]
             
             jp_title, en_title = "", ""
+            # 尝试从语言链接找英文名
             for l in page.get("langlinks", []):
                 if l["lang"] == "ja": jp_title = l["*"]
                 if l["lang"] == "en": en_title = l["*"]
             
+            # --- 核心迭代：解析 Infobox 里的罗马音/英文名 ---
+            if "revisions" in page:
+                wikitext = page["revisions"][0]["*"]
+                # 匹配罗马字或英文名称字段
+                romaji_match = re.search(r'\|\s*(?:罗马字|罗马字|romaji)\s*=\s*(.*?)\s*[\|\}\n]', wikitext)
+                if romaji_match:
+                    en_title = romaji_match.group(1).strip()
+                elif not en_title:
+                    eng_name_match = re.search(r'\|\s*(?:英文名称|english_title)\s*=\s*(.*?)\s*[\|\}\n]', wikitext)
+                    if eng_name_match:
+                        en_title = eng_name_match.group(1).strip()
+
             return {
                 "source": "Wikipedia",
                 "EN": en_title or title,
@@ -168,7 +183,7 @@ def process_item(item_index, all_data_list):
     log(f"开始处理 | {orig_title}", "PROCESS")
     info = None
 
-    # 尝试不同来源
+    # 尝试不同来源 (保持原有顺序)
     for func in [fetch_wikipedia, fetch_bangumi, fetch_anilist]:
         info = func(search_term)
         if info and info.get('image'): break
@@ -178,9 +193,9 @@ def process_item(item_index, all_data_list):
         item_data['title_JP'] = info.get('JP')
         item_data['title_EN'] = info.get('EN')
         
-        # --- 迭代：判断保存图片的名字是否是英文，不是则强转拼音 ---
+        # --- 核心迭代：判断保存图片的名字是否是英文，不是则强转拼音 ---
         en_candidate = info.get('EN', '')
-        # 如果含有中文，则强制使用拼音
+        # 如果检测到中文字符，哪怕是 API 返回的 EN 字段，也要强转拼音作为文件名
         if re.search(r'[\u4e00-\u9fa5]', en_candidate):
             file_base = pinyin_convert(orig_title)
         else:
@@ -192,7 +207,7 @@ def process_item(item_index, all_data_list):
             item_data['coverFile'] = f"covers/{filename}"
             item_data['coverURL'] = info['image']
 
-    # 强制清理英文名中的中文
+    # 强制清理英文名中的中文 (保持原有清理逻辑)
     if item_data.get('title_EN'):
         item_data["title_EN"] = re.sub(r'[\u4e00-\u9fa5]', '', item_data["title_EN"]).strip()
 
