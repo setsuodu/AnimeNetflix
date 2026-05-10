@@ -10,34 +10,50 @@ namespace AnimeAvalonia.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    private readonly HttpClient _http = new() { BaseAddress = new Uri("http://10.0.2.2:7153/") }; // 模拟器访问主机用 10.0.2.2
+    // ==================== 改这里 ====================
+    private readonly HttpClient _http = new()
+    {
+        BaseAddress = new Uri("http://192.168.1.198:8060/"),   // ← 确认这个IP对不对
+        Timeout = TimeSpan.FromSeconds(20)
+    };
+    // ===============================================
 
     [ObservableProperty]
-    private ObservableCollection<AnimeInfo> _animeList = new();
+    private ObservableCollection<AnimeInfo> animeList = new();
 
     [ObservableProperty]
-    private AnimeInfo? _selectedAnime;
+    private AnimeInfo? selectedAnime;
 
     [RelayCommand]
     private async Task Refresh()
     {
+        Console.WriteLine("=== 开始刷新列表 ===");
         try
         {
-            var list = await _http.GetFromJsonAsync<AnimeInfo[]>("api/netflix/list")
-                       ?? Array.Empty<AnimeInfo>();
+            var url = _http.BaseAddress + "api/netflix/list";
+            Console.WriteLine($"正在请求: {url}");
+
+            var list = await _http.GetFromJsonAsync<AnimeInfo[]>("api/netflix/list");
+
+            Console.WriteLine($"✅ 成功获取 {list?.Length ?? 0} 条数据");
+
             AnimeList.Clear();
-            foreach (var item in list) AnimeList.Add(item);
+            if (list != null)
+            {
+                foreach (var item in list)
+                    AnimeList.Add(item);
+            }
         }
         catch (Exception ex)
         {
-            // TODO: 加个提示 Toast 或 Dialog
-            Console.WriteLine("加载失败: " + ex.Message);
+            Console.WriteLine($"❌ 请求失败: {ex.Message}");
+            Console.WriteLine(ex.ToString());
         }
     }
 
     public MainViewModel()
     {
-        RefreshCommand.Execute(null); // 启动时自动刷新
+        _ = Refresh();   // 启动时自动刷新
     }
 }
 
@@ -46,5 +62,4 @@ public class AnimeInfo
     public string? Title { get; set; }
     public string? CoverUrl { get; set; }
     public string? LatestEpisode { get; set; }
-    public string? M3u8Url { get; set; }
 }

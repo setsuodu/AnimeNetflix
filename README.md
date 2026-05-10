@@ -91,3 +91,10 @@ docker compose up -d
 - [ ] 4. Episodes没写入；
 - [ ] 5. API整理；
 - [ ] 6. 目录整理；
+
+## Android 调试
+
+```
+cd /d D:\Android\Sdk\platform-tools
+adb logcat -c && adb logcat -v threadtime *:E *:W | findstr "AnimeAvalonia com.setsuodu"
+```
