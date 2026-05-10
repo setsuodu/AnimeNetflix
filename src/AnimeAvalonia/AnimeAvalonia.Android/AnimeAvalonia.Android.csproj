@@ -4,25 +4,37 @@
     <TargetFramework>net10.0-android</TargetFramework>
     <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
-    <ApplicationId>com.CompanyName.AnimeAvalonia</ApplicationId>
+    <ApplicationId>com.setsuodu.AnimeNetflix</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    
+    <!-- 关键修复：关闭 Fast Deployment 和 AOT 狗屎 -->
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <PublishTrimmed>false</PublishTrimmed>
+    <AndroidLinkMode>None</AndroidLinkMode>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk><!-- 强制嵌入 -->
+    
+    <!-- 禁用 Fast Deployment -->
+    <AndroidFastDeploymentType>None</AndroidFastDeploymentType>
   </PropertyGroup>
-
+  
   <ItemGroup>
-    <AndroidResource Include="Icon.png">
-      <Link>Resources\drawable\Icon.png</Link>
-    </AndroidResource>
+  	<AndroidResource Include="Icon.png">
+  		<Link>Resources\drawable\Icon.png</Link>
+  	</AndroidResource>
   </ItemGroup>
-
+  
   <ItemGroup>
-    <PackageReference Include="Avalonia.Android" />
-    <PackageReference Include="Xamarin.AndroidX.Core.SplashScreen" />
+  	<PackageReference Include="Avalonia.Android" />
+  	<PackageReference Include="Avalonia.Themes.Fluent" />
+  	<PackageReference Include="Avalonia.Fonts.Inter" />
+  	<PackageReference Include="CommunityToolkit.Mvvm" />
+  	<!-- Xamarin.AndroidX.Core.SplashScreen 是原来就有的，保留 -->
+  	<PackageReference Include="Xamarin.AndroidX.Core.SplashScreen" />
   </ItemGroup>
-
+  
   <ItemGroup>
-    <ProjectReference Include="..\AnimeAvalonia\AnimeAvalonia.csproj" />
+  	<ProjectReference Include="..\AnimeAvalonia\AnimeAvalonia.csproj" />
   </ItemGroup>
 </Project>

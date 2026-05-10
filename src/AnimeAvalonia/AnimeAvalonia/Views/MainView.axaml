@@ -3,14 +3,33 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:AnimeAvalonia.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="AnimeAvalonia.Views.MainView"
              x:DataType="vm:MainViewModel">
-  <Design.DataContext>
-    <!-- This only sets the DataContext for the previewer in an IDE,
-         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-    <vm:MainViewModel />
-  </Design.DataContext>
 
-  <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+	<Grid RowDefinitions="Auto,*,Auto">
+		<!-- 标题栏 -->
+		<TextBlock Grid.Row="0" Text="AnimeNetflix" FontSize="24" FontWeight="Bold"
+				   HorizontalAlignment="Center" Margin="10"/>
+
+		<!-- 动漫列表 -->
+		<ListBox Grid.Row="1" ItemsSource="{Binding AnimeList}"
+				 SelectedItem="{Binding SelectedAnime}">
+			<ListBox.ItemTemplate>
+				<DataTemplate>
+					<StackPanel Orientation="Horizontal" Spacing="10" Margin="5">
+						<Image Width="80" Source="{Binding CoverUrl}" />
+						<StackPanel>
+							<TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Medium"/>
+							<TextBlock Text="{Binding LatestEpisode}" Foreground="Gray"/>
+						</StackPanel>
+					</StackPanel>
+				</DataTemplate>
+			</ListBox.ItemTemplate>
+		</ListBox>
+
+		<!-- 底部按钮 -->
+		<Button Grid.Row="2" Content="刷新列表" Command="{Binding RefreshCommand}"
+				HorizontalAlignment="Center" Margin="10"/>
+	</Grid>
 </UserControl>
