@@ -3,15 +3,14 @@ using Android.Content.PM;
 using Avalonia;
 using Avalonia.Android;
 
-namespace AnimeAvalonia.Android;
+namespace MyAvaloniaApp.Android;
 
 [Activity(
-    Label = "AnimeNetflix",
+    Label = "MyAvaloniaApp.Android",
     Theme = "@style/MyTheme.NoActionBar",
     Icon = "@drawable/icon",
     MainLauncher = true,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
-public class MainActivity : AvaloniaMainActivity   // ← 这里去掉 <App>
+public class MainActivity : AvaloniaMainActivity
 {
-    // CustomizeAppBuilder 已经不需要在这里写了（移到 Application 类里）
 }

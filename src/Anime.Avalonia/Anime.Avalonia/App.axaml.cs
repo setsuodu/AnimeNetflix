@@ -4,10 +4,10 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
-using AnimeAvalonia.ViewModels;
-using AnimeAvalonia.Views;
+using MyAvaloniaApp.ViewModels;
+using MyAvaloniaApp.Views;
 
-namespace AnimeAvalonia;
+namespace MyAvaloniaApp;
 
 public partial class App : Application
 {

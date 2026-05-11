@@ -86,8 +86,8 @@ docker compose up -d
 ## TODO:
 
 - [x] 1. docker-compose 第一次自动启动出错，应该是db未完全启动问题；
-- [ ] 2. manus 爬取 cover，英文名，更新数据库；
-- [x] 3. 自动版本号，没写入；
+- [x] 2. 自动版本号，没写入；
+- [ ] 3. manus 爬取 cover，英文名，更新数据库；
 - [ ] 4. Episodes没写入；
 - [ ] 5. API整理；
 - [ ] 6. 目录整理；
