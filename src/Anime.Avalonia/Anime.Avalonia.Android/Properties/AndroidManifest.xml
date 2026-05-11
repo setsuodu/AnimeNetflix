@@ -2,17 +2,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           android:versionCode="1"
           android:versionName="1.0"
-          package="com.CompanyName.MyAvaloniaApp">
+          package="com.setsuodu.animenetflix">
 
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
 	<application
-        android:label="MyAvaloniaApp"
+        android:label="AnimeNetflix"
         android:usesCleartextTraffic="true"
-        android:theme="@style/Theme.AppCompat.Light.NoActionBar"><!-- 这个最稳 -->
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
-		<activity android:name="crc64de25590f7a77f784.MainActivity"
+		<activity android:name="com.setsuodu.animenetflix.MainActivity"
                   android:exported="true"
                   android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|keyboardHidden|keyboard|navigation|mcc|mnc|locale|uiMode|touchscreen">
 			<intent-filter>

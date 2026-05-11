@@ -2,15 +2,17 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
-using System.Linq;
 using Avalonia.Markup.Xaml;
-using MyAvaloniaApp.ViewModels;
-using MyAvaloniaApp.Views;
+using LibVLCSharp.Shared;
+using Anime.Avalonia.ViewModels;
+using Anime.Avalonia.Views;
 
-namespace MyAvaloniaApp;
+namespace Anime.Avalonia;
 
 public partial class App : Application
 {
+    private LibVLC _libVLC;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -18,6 +20,8 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        _libVLC = new LibVLC("--no-logs"); // 或更多选项
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow

@@ -1,9 +1,9 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Anime.Api/Anime.Api.csproj" />
+    <Project Path="src/Anime.Avalonia/Anime.Avalonia.Android/Anime.Avalonia.Android.csproj" />
+    <Project Path="src/Anime.Avalonia/Anime.Avalonia/Anime.Avalonia.csproj" />
     <Project Path="src/Anime.Infrastructure/Anime.Infrastructure.csproj" />
-    <Project Path="src/AnimeAvalonia/AnimeAvalonia/AnimeAvalonia.csproj" />
-    <Project Path="src/AnimeAvalonia/AnimeAvalonia.Android/AnimeAvalonia.Android.csproj" />
   </Folder>
   <Folder Name="/解决方案项/">
     <File Path="docker-compose.yml" />

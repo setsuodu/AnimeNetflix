@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace MyAvaloniaApp.ViewModels;
+namespace Anime.Avalonia.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {

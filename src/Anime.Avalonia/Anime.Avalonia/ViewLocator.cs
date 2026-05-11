@@ -2,9 +2,9 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using MyAvaloniaApp.ViewModels;
+using Anime.Avalonia.ViewModels;
 
-namespace MyAvaloniaApp;
+namespace Anime.Avalonia;
 
 /// <summary>
 /// Given a view model, returns the corresponding view if possible.

@@ -4,7 +4,7 @@ using System.Text;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace MyAvaloniaApp.ViewModels;
+namespace Anime.Avalonia.ViewModels;
 
 public partial class AnimeModel : ObservableObject
 {

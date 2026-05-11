@@ -1,8 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Input;
-using MyAvaloniaApp.ViewModels;
+using Anime.Avalonia.ViewModels;
 
-namespace MyAvaloniaApp.Views;
+namespace Anime.Avalonia.Views;
 
 public partial class MainView : UserControl
 {

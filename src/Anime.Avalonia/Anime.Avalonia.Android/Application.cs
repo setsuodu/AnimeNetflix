@@ -3,7 +3,7 @@ using Android.Runtime;
 using Avalonia;
 using Avalonia.Android;
 
-namespace MyAvaloniaApp.Android
+namespace Anime.Avalonia.Android
 {
     [Application]
     public class Application : AvaloniaAndroidApplication<App>
