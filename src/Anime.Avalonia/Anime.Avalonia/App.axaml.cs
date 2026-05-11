@@ -1,18 +1,12 @@
+using Anime.Avalonia.Views;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Data.Core;
-using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
-using LibVLCSharp.Shared;
-using Anime.Avalonia.ViewModels;
-using Anime.Avalonia.Views;
 
 namespace Anime.Avalonia;
 
 public partial class App : Application
 {
-    private LibVLC _libVLC;
-
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -20,25 +14,10 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        _libVLC = new LibVLC("--no-logs"); // 或更多选项
-
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        // === 关键修复：Android 下必须手动设置主界面 ===
+        if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = new MainViewModel()
-            };
-        }
-        else if (ApplicationLifetime is IActivityApplicationLifetime singleViewFactoryApplicationLifetime)
-        {
-            singleViewFactoryApplicationLifetime.MainViewFactory = () => new MainView { DataContext = new MainViewModel() };
-        }
-        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
-        {
-            singleViewPlatform.MainView = new MainView
-            {
-                DataContext = new MainViewModel()
-            };
+            singleViewPlatform.MainView = new MainView();   // ← 改成你实际的主页面
         }
 
         base.OnFrameworkInitializationCompleted();

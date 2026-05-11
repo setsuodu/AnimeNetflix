@@ -6,12 +6,14 @@
     <Nullable>enable</Nullable>
 	<ApplicationId>com.setsuodu.animenetflix</ApplicationId>
 	<ApplicationTitle>AnimeNetflix</ApplicationTitle>
-	<AssemblyName>AnimeAvalonia.Android</AssemblyName>
-	<RootNamespace>AnimeAvalonia</RootNamespace>
+	<AssemblyName>Anime.Avalonia.Android</AssemblyName>
+	<RootNamespace>Anime.Avalonia</RootNamespace>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <!-- 关键：强制打包 libc++_shared.so -->
+	<AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
 	<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
 	<!--<AndroidFastDeploymentType>Assemblies</AndroidFastDeploymentType>-->
   </PropertyGroup>
@@ -24,10 +26,24 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Android" />
+    <PackageReference Include="VideoLAN.LibVLC.Android" />
     <PackageReference Include="Xamarin.AndroidX.Core.SplashScreen" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Anime.Avalonia\Anime.Avalonia.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+  	<!-- 确保这两个包都引用最新版 -->
+  	<!-- 或更高版本 -->
+	<PackageReference Include="LibVLCSharp" />
+	<PackageReference Include="LibVLCSharp.Avalonia" />
+  </ItemGroup>
+  
+  <ItemGroup>
+  	<!-- 如果上面还不行，手动复制 libc++_shared.so（推荐） -->
+  	<AndroidNativeLibrary Include="..\libs\arm64-v8a\*.so" />
   </ItemGroup>
 </Project>
