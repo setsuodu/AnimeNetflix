@@ -1,7 +1,11 @@
-using Anime.Avalonia.Views;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Data.Core;
+using Avalonia.Data.Core.Plugins;
+using System.Linq;
 using Avalonia.Markup.Xaml;
+using Anime.Avalonia.ViewModels;
+using Anime.Avalonia.Views;
 
 namespace Anime.Avalonia;
 
@@ -14,12 +18,37 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // === 关键修复：Android 下必须手动设置主界面 ===
-        if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            singleViewPlatform.MainView = new MainView();   // ← 改成你实际的主页面
+            // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
+            // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
+            DisableAvaloniaDataAnnotationValidation();
+            desktop.MainWindow = new MainWindow
+            {
+                DataContext = new MainViewModel()
+            };
+        }
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+        {
+            singleViewPlatform.MainView = new MainView
+            {
+                DataContext = new MainViewModel()
+            };
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void DisableAvaloniaDataAnnotationValidation()
+    {
+        // Get an array of plugins to remove
+        var dataValidationPluginsToRemove =
+            BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+
+        // remove each entry found
+        foreach (var plugin in dataValidationPluginsToRemove)
+        {
+            BindingPlugins.DataValidators.Remove(plugin);
+        }
     }
 }

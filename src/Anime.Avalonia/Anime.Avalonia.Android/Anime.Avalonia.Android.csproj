@@ -1,21 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-android</TargetFramework>
-    <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion>21</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
-	<ApplicationId>com.setsuodu.animenetflix</ApplicationId>
-	<ApplicationTitle>AnimeNetflix</ApplicationTitle>
-	<AssemblyName>Anime.Avalonia.Android</AssemblyName>
-	<RootNamespace>Anime.Avalonia</RootNamespace>
+    <ApplicationId>com.CompanyName.Anime.Avalonia</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
-    <!-- 关键：强制打包 libc++_shared.so -->
-	<AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
-	<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
-	<!--<AndroidFastDeploymentType>Assemblies</AndroidFastDeploymentType>-->
+	<!-- 修闪退 -->
+	<PublishTrimmed>false</PublishTrimmed>
+	<TrimMode>none</TrimMode>
+	<RunAOTCompilation>false</RunAOTCompilation>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,18 +29,5 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Anime.Avalonia\Anime.Avalonia.csproj" />
-  </ItemGroup>
-
-
-  <ItemGroup>
-  	<!-- 确保这两个包都引用最新版 -->
-  	<!-- 或更高版本 -->
-	<PackageReference Include="LibVLCSharp" />
-	<PackageReference Include="LibVLCSharp.Avalonia" />
-  </ItemGroup>
-  
-  <ItemGroup>
-  	<!-- 如果上面还不行，手动复制 libc++_shared.so（推荐） -->
-  	<AndroidNativeLibrary Include="..\libs\arm64-v8a\*.so" />
   </ItemGroup>
 </Project>
