@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Anime.Avalonia.Views.DetailPage">
+
+	<Grid RowDefinitions="*, Auto">
+		<Border x:Name="VideoContainer"
+                Grid.Row="0"
+                Background="Black"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
+			<TextBlock Text="等待播放器初始化..."
+                       Foreground="White"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+		</Border>
+
+		<Border Grid.Row="1" Background="#222222" BorderBrush="#333333" BorderThickness="0,1,0,0" Padding="12, 10">
+			<StackPanel Spacing="8">
+				<Grid ColumnDefinitions="Auto, *, Auto">
+					<TextBlock x:Name="CurrentTimeText" Grid.Column="0" Text="00:00" Foreground="#DDDDDD" FontSize="12" VerticalAlignment="Center"/>
+					<ProgressBar x:Name="VideoProgressBar"
+                                 Grid.Column="1"
+                                 Margin="12, 0"
+                                 Minimum="0" Maximum="100"
+                                 Height="14"
+                                 Background="#000000"
+                                 Foreground="#00DDFF"
+                                 Cursor="Hand"
+                                 PointerPressed="VideoProgressBar_PointerPressed"
+                                 PointerMoved="VideoProgressBar_PointerMoved"
+                                 PointerReleased="VideoProgressBar_PointerReleased"/>
+					<TextBlock x:Name="TotalTimeText" Grid.Column="2" Text="00:00" Foreground="#DDDDDD" FontSize="12" VerticalAlignment="Center"/>
+				</Grid>
+
+				<Button x:Name="PlayPauseButton"
+                        HorizontalAlignment="Center"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Content="开始播放"
+                        MinWidth="130" Height="42"
+                        Background="#444444"
+                        Foreground="White"
+                        BorderBrush="#888888"
+                        BorderThickness="1"
+                        FontSize="15"
+                        Click="OnPlayButtonClick">
+					<Button.Styles>
+						<Style Selector="Button:pointerover /template/ ContentPresenter">
+							<Setter Property="Background" Value="#666666"/>
+							<Setter Property="BorderBrush" Value="#00DDFF"/>
+						</Style>
+						<Style Selector="Button:pressed /template/ ContentPresenter">
+							<Setter Property="Background" Value="#111111"/>
+						</Style>
+					</Button.Styles>
+				</Button>
+			</StackPanel>
+		</Border>
+	</Grid>
+</UserControl>

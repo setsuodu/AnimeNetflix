@@ -22,4 +22,14 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="LibVLCSharp.Avalonia" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Anime.Infrastructure\Anime.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\DetailPage.axaml.cs">
+      <DependentUpon>MainViewBak.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>
