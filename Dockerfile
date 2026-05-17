@@ -3,13 +3,13 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
 # 2. 复制项目文件并恢复依赖 (利用 Docker 缓存)
-COPY ["Anime.Api/Anime.Api.csproj", "Anime.Api/"]
-COPY ["Anime.Infrastructure/Anime.Infrastructure.csproj", "Anime.Infrastructure/"]
-RUN dotnet restore "Anime.Api/Anime.Api.csproj"
+COPY ["backend/src/Anime.Api/Anime.Api.csproj", "backend/src/Anime.Api/"]
+COPY ["backend/src/Anime.Infrastructure/Anime.Infrastructure.csproj", "backend/src/Anime.Infrastructure/"]
+RUN dotnet restore "backend/src/Anime.Api/Anime.Api.csproj"
 
 # 3. 复制剩余源码并发布
 COPY . .
-WORKDIR "/src/Anime.Api"
+WORKDIR "/src/backend/src/Anime.Api"
 
 # ★★★★★ 使用 GitHub Tag 作为版本 ★★★★★
 ARG VERSION=1.0.0
@@ -35,7 +35,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # ★★★★★★★★ 重点：复制 seed.json ★★★★★★★★
-COPY Anime.Api/seed.json ./
+COPY backend/src/Anime.Api/seed.json ./
 
 # .net10.0-alpine 瘦身过头报错
 # Cannot load library libgssapi_krb5.so.2 
