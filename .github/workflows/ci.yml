@@ -23,10 +23,10 @@ jobs:
 
       # ====================== 重点修改部分 ======================
       - name: Restore dependencies
-        run: dotnet restore backend/src/anime.api/anime.api.csproj
+        run: dotnet restore backend/src/Anime.Api/Anime.Api.csproj
 
       - name: Build
-        run: dotnet build backend/src/anime.api/anime.api.csproj --configuration Release --no-restore
+        run: dotnet build backend/src/Anime.Api/Anime.Api.csproj --configuration Release --no-restore
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
