@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -33,7 +34,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -59,7 +62,10 @@ data class Episode(val title: String, val url: String)
 // ====================== API ======================
 interface NetflixApi {
     @GET("api/netflix")
-    suspend fun getList(@Query("page") page: Int = 1, @Query("pageSize") pageSize: Int = 60): List<Anime>
+    suspend fun getList(
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 30   // 和 Web 版保持一致
+    ): List<Anime>
 }
 
 // ====================== MainActivity ======================
@@ -103,32 +109,58 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostController) {
     var animeList by remember { mutableStateOf<List<Anime>>(emptyList()) }
-    var filteredList by remember { mutableStateOf<List<Anime>>(emptyList()) }
     var searchText by remember { mutableStateOf("") }
+    var currentPage by remember { mutableStateOf(1) }
     var isLoading by remember { mutableStateOf(true) }
+    var isLoadingMore by remember { mutableStateOf(false) }
+    var hasMore by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
-        isLoading = true
-        val list = withContext(Dispatchers.IO) { api.getList() }
-        animeList = list
-        filteredList = list
-        isLoading = false
+    val scope = rememberCoroutineScope()
+
+    // 加载分页
+    suspend fun loadPage(page: Int, onResult: (List<Anime>, Boolean) -> Unit) {
+        try {
+            val newItems = withContext(Dispatchers.IO) {
+                api.getList(page = page, pageSize = 30)
+            }
+            val hasMoreData = newItems.size >= 30
+            onResult(newItems, hasMoreData)
+        } catch (e: Exception) {
+            Log.e("HomeScreen", "加载失败", e)
+        }
     }
 
-    Scaffold(topBar = {
-        TopAppBar(title = { Text("AnimeNetflix") }, colors = TopAppBarDefaults.topAppBarColors(Color(0xFF141414)))
-    }) { padding ->
+    // 过滤（本地搜索）
+    val filteredList = remember(searchText, animeList) {
+        if (searchText.isBlank()) animeList
+        else animeList.filter { anime ->
+            anime.title.contains(searchText, ignoreCase = true) ||
+                    anime.japaneseTitle.contains(searchText, ignoreCase = true)
+        }
+    }
+
+    // 初始加载第一页
+    LaunchedEffect(Unit) {
+        loadPage(1) { list, more ->
+            animeList = list
+            hasMore = more
+            isLoading = false
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("AnimeNetflix") },
+                colors = TopAppBarDefaults.topAppBarColors(Color(0xFF141414))
+            )
+        }
+    ) { padding ->
         Column(Modifier.padding(padding)) {
-            // ====================== 搜索框（改进版） ======================
+            // ==================== 搜索框（保留你原来的清除按钮） ====================
             OutlinedTextField(
                 value = searchText,
-                onValueChange = {
-                    searchText = it
-                    filteredList = if (it.isBlank()) animeList else animeList.filter { a ->
-                        a.title.contains(it, ignoreCase = true) ||
-                                a.japaneseTitle.contains(it, ignoreCase = true)
-                    }
-                },
+                onValueChange = { searchText = it },
                 label = { Text("搜索动漫...") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -138,12 +170,20 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
                     if (searchText.isNotEmpty()) {
                         IconButton(onClick = {
                             searchText = ""
-                            filteredList = animeList
+                            // 清空搜索后重新加载第一页
+                            isLoading = true
+                            currentPage = 1
+                            scope.launch {
+                                loadPage(1) { list, more ->
+                                    animeList = list
+                                    hasMore = more
+                                    isLoading = false
+                                }
+                            }
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
-                                contentDescription = "清除",
-                                tint = Color.Gray
+                                contentDescription = "清除搜索"
                             )
                         }
                     }
@@ -165,6 +205,43 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
                     items(filteredList) { anime ->
                         AnimeCard(anime, imageBaseUrl) {
                             navController.navigate("detail/${anime.id}")
+                        }
+                    }
+
+                    // ====================== Load More ======================
+                    if (hasMore && searchText.isBlank()) {
+                        item(span = { GridItemSpan(3) }) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Button(
+                                    onClick = {
+                                        isLoadingMore = true
+                                        currentPage++
+                                        scope.launch {
+                                            loadPage(currentPage) { newItems, more ->
+                                                animeList = animeList + newItems
+                                                hasMore = more
+                                                isLoadingMore = false
+                                            }
+                                        }
+                                    },
+                                    enabled = !isLoadingMore,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF679A))
+                                ) {
+                                    if (isLoadingMore) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            color = Color.White
+                                        )
+                                    } else {
+                                        Text("查看更多")
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -200,16 +277,11 @@ fun AnimeCard(
                     model = mainImage,
                     contentDescription = anime.title,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-                // 如果主图加载失败，叠加默认封面（不嵌套 AsyncImage）
-                AsyncImage(
-                    model = defaultCover,
-                    contentDescription = "默认封面",
-                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    alpha = 0.0f   // 默认透明，加载失败时我们后面再处理
+                    // 1. 如果主图加载失败，自动换成默认封面
+                    error = rememberAsyncImagePainter(defaultCover),
+                    // 2. 在主图还没加载出来的时候，显示的占位图（可选）
+                    placeholder = rememberAsyncImagePainter(defaultCover)
                 )
             }
 

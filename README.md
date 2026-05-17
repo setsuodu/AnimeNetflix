@@ -1,5 +1,9 @@
 # 自宅影院
 
+## API 文档
+
+https://github.com/setsuodu/AnimeNetflixDocs
+
 ## CI
 
 当前项目的自动化有：
@@ -87,10 +91,10 @@ docker compose up -d
 
 - [x] 1. docker-compose 第一次自动启动出错，应该是db未完全启动问题；
 - [x] 2. 自动版本号，没写入；
-- [ ] 3. manus 爬取 cover，英文名，更新数据库；
-- [ ] 4. Episodes没写入；
-- [ ] 5. API整理；
-- [ ] 6. 目录整理；
+- [x] 3. manus 爬取 cover，英文名，更新数据库；
+- [x] 4. Episodes没写入；
+- [x] 5. API整理；
+- [x] 6. 目录整理；
 
 ## Android 调试
 
