@@ -75,11 +75,12 @@ public class JinYingScraper : IAnimeScraper
         doc.LoadHtml(html);
         var res = new ScrapedDetailModel();
 
+        // 原有播放地址解析保持不变
         var p1Nodes = doc.DocumentNode.SelectNodes("//div[@id='play_1']//li")?.Select(n => n.InnerText.Trim());
-
         res.Play1 = CleanJinYingUrls(p1Nodes);
-        res.Play2 = string.Empty; // 强制清空 BackupUrls
+        res.Play2 = string.Empty;
 
+        // 原有年份、地区、类型解析...
         var infoNodes = doc.DocumentNode.SelectNodes("//div[@class='vodinfobox']//li");
         if (infoNodes != null)
         {
@@ -95,7 +96,40 @@ public class JinYingScraper : IAnimeScraper
                 if (text.Contains("类型：")) res.Category = text.Replace("类型：", "").Trim();
             }
         }
+
+        // 新增：尝试多种方式提取更新时间
+        res.SiteUpdateTime = ExtractSiteUpdateTime(doc);
+
         return res;
+    }
+
+    // 新增辅助方法
+    private DateTime? ExtractSiteUpdateTime(HtmlDocument doc)
+    {
+        var updateText = doc.DocumentNode.InnerText;
+        var match = Regex.Match(updateText, @"更新[:：\s]*(\d{4}-\d{1,2}-\d{1,2})");
+
+        if (match.Success && DateTime.TryParse(match.Groups[1].Value, out var dt))
+        {
+            // ✅ 关键：标记为 UTC，否则 PostgreSQL 报错
+            return DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+        }
+
+        // 方式2：查找包含"更新"的节点
+        var updateNodes = doc.DocumentNode.SelectNodes("//*[contains(text(),'更新')]");
+        if (updateNodes != null)
+        {
+            foreach (var node in updateNodes)
+            {
+                var m = Regex.Match(node.InnerText, @"(\d{4}-\d{1,2}-\d{1,2})");
+                if (m.Success && DateTime.TryParse(m.Groups[1].Value, out dt))
+                {
+                    return DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+                }
+            }
+        }
+
+        return null;
     }
     // 专门处理金鹰播放地址的私有辅助函数
     private string CleanJinYingUrls(IEnumerable<string>? nodes)

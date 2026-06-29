@@ -49,6 +49,7 @@ docker compose down
 > [windows] rd /s /q "postgres_data" 👈这个是docker-compose运行后生成的
 
 4. 生成迁移：直接指向你的两个文件夹，别名都不用起
+cd src
 dotnet ef migrations add Init -p Anime.Infrastructure -s Anime.Api
 
 5. 单拉起干净的数据库环境
@@ -63,9 +64,11 @@ dotnet ef database update -p Anime.Infrastructure -s Anime.Api
 
 ## 访问
 
-8. https://localhost:7153/api/collector/run 👈开始爬取
-9. https://localhost:7153/api/netflix/export-seed 👈导出SQL种子
-10. https://localhost:5041/ 👈影院首页
+8. https://localhost:8060/api/collector/run 👈开始爬取
+- 【爬虫完成】总耗时 1147.24 秒
+- 【爬虫完成】总耗时 3032.81 秒
+9. https://localhost:8060/api/netflix/export-seed 👈导出SQL种子
+10. https://localhost:8060/ 👈影院首页
 
 ## 部署
 

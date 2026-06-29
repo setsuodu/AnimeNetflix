@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Anime.Infrastructure.Migrations
 {
     [DbContext(typeof(AnimeDbContext))]
-    [Migration("20260508150311_Init")]
+    [Migration("20260628213046_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -27,11 +27,9 @@ namespace Anime.Infrastructure.Migrations
 
             modelBuilder.Entity("Anime.Infrastructure.Entities.AnimeInfo", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<string>("SourceFingerprint")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Area")
                         .IsRequired()
@@ -70,11 +68,6 @@ namespace Anime.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("SourceFingerprint")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -86,7 +79,7 @@ namespace Anime.Infrastructure.Migrations
                     b.Property<int>("Year")
                         .HasColumnType("integer");
 
-                    b.HasKey("Id");
+                    b.HasKey("SourceFingerprint");
 
                     b.HasIndex("Title")
                         .HasDatabaseName("Index_Anime_Title");

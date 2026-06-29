@@ -5,8 +5,13 @@ namespace Anime.Infrastructure.Entities;
 
 public class AnimeInfo
 {
-    [Key]
-    public int Id { get; set; }
+    //[Key]
+    //public int Id { get; set; }
+
+    // 对应代码里的 SourceFingerprint，用来存 ID 或 Hash，做唯一索引
+    [Key]  // 新主键
+    [MaxLength(100)]
+    public string SourceFingerprint { get; set; } = string.Empty;
 
     [Required]
     [MaxLength(200)]
@@ -24,11 +29,6 @@ public class AnimeInfo
     // 在 AnimeInfo.cs 中添加
     public string CoverUrl { get; set; } = string.Empty;
 
-    // 对应代码里的 SourceFingerprint，用来存 ID 或 Hash，做唯一索引
-    [Required]
-    [MaxLength(100)]
-    public string SourceFingerprint { get; set; } = string.Empty;
-
     [Column(TypeName = "text")] // 用 text 类型，防止集数太多超长
     public string PlayUrls { get; set; } = string.Empty; // 金鹰源，必须 m3u8 结尾
 
@@ -44,5 +44,6 @@ public class AnimeInfo
     [MaxLength(100)]
     public string Category { get; set; } = string.Empty; // 存储类型（如 剧情/科幻）
 
-    public DateTime UpdateTime { get; set; }
+    public DateTime UpdateTime { get; set; } // 上次爬取时间
+    public DateTime? SiteUpdateTime { get; set; } // 论坛更新时间
 }

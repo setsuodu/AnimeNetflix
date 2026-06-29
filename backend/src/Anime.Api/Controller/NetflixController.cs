@@ -22,9 +22,9 @@ namespace Anime.Api.Controllers
             if (!string.IsNullOrWhiteSpace(search))
                 query = query.Where(x => x.Title.Contains(search));
 
-            // 分页逻辑：Skip 跳过前面的，Take 拿现在的[cite: 7]
+            // 跟资源站一样：按更新时间倒序（最新更新的排最前面）
             var data = await query
-                .OrderByDescending(x => x.Id)
+                .OrderByDescending(x => x.SiteUpdateTime)     // ← 改这里
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -32,14 +32,26 @@ namespace Anime.Api.Controllers
             return Ok(data);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetDetail(int id)
+        [HttpGet("{fingerprint}")]
+        public async Task<IActionResult> GetDetail(string fingerprint)
         {
-            // 这里的 Select 确保前端能拿到所有播放字段
+            Console.WriteLine($"GetDetail: {fingerprint}");
+
             var anime = await _db.Animes
                 .AsNoTracking()
-                .Select(x => new { x.Id, x.Title, x.PlayUrls, x.BackupUrls })
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .Select(x => new
+                {
+                    x.SourceFingerprint,   // 改为主键
+                    x.Title,
+                    x.PlayUrls,
+                    x.BackupUrls,
+                    x.Episodes,
+                    x.Year,
+                    x.Area,
+                    x.Category,
+                    x.UpdateTime
+                })
+                .FirstOrDefaultAsync(x => x.SourceFingerprint == fingerprint);
 
             return anime == null ? NotFound() : Ok(anime);
         }

@@ -20,6 +20,8 @@ public class AnimeDbContext : DbContext
         // 建立索引，方便前端检索
         modelBuilder.Entity<AnimeInfo>(entity =>
         {
+            entity.HasKey(e => e.SourceFingerprint);  // 显式声明
+
             entity.HasIndex(e => e.Title).HasDatabaseName("Index_Anime_Title");
             entity.Property(e => e.PlayUrls).HasColumnType("text");
         });

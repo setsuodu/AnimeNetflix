@@ -17,4 +17,5 @@ public class ScrapedDetailModel
     public string Area { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
     public string Cover { get; set; } = string.Empty;
+    public DateTime? SiteUpdateTime { get; set; }          // 纯增量对比字段
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -16,14 +15,12 @@ namespace Anime.Infrastructure.Migrations
                 name: "Animes",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    SourceFingerprint = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     JapaneseTitle = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     EnglishTitle = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Episodes = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     CoverUrl = table.Column<string>(type: "text", nullable: false),
-                    SourceFingerprint = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     PlayUrls = table.Column<string>(type: "text", nullable: false),
                     BackupUrls = table.Column<string>(type: "text", nullable: false),
                     Year = table.Column<int>(type: "integer", nullable: false),
@@ -33,7 +30,7 @@ namespace Anime.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Animes", x => x.Id);
+                    table.PrimaryKey("PK_Animes", x => x.SourceFingerprint);
                 });
 
             migrationBuilder.CreateIndex(

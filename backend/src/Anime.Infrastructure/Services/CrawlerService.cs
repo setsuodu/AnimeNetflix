@@ -3,6 +3,7 @@ using Anime.Infrastructure.Entities;
 using Anime.Infrastructure.Services.Scrapers;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace Anime.Infrastructure.Services;
 
@@ -19,7 +20,7 @@ public class CrawlerService
 
     public async Task Run(IAnimeScraper scraper, string urlTemplate)
     {
-        var sw = Stopwatch.StartNew(); // 开始计时
+        var sw = Stopwatch.StartNew();
         try
         {
             Console.WriteLine($"【爬虫点火】开始时间: {DateTime.Now:HH:mm:ss}");
@@ -33,74 +34,86 @@ public class CrawlerService
                 var listHtml = (i == 1) ? firstPageHtml : await _http.GetStringAsync(string.Format(urlTemplate, i));
                 var items = scraper.ParseList(listHtml);
 
+                Console.WriteLine($"【爬虫】第 {i}/{total} 页解析到 {items.Count} 条数据");
+
                 foreach (var item in items)
                 {
                     using var db = _dbFactory.CreateDbContext();
 
-                    // 1. 根据指纹查找现有记录
-                    var existing = await db.Animes.FirstOrDefaultAsync(a => a.SourceFingerprint == item.Fingerprint);
-
-                    // 2. 爬取详情页（获取最新标题、剧集、分类等）
                     var detailHtml = await _http.GetStringAsync(item.DetailUrl);
                     var detail = scraper.ParseDetail(detailHtml);
 
+                    var (baseTitle, episodePart) = SplitTitle(item.Title);
+
+                    var existing = await db.Animes.FirstOrDefaultAsync(a => a.SourceFingerprint == item.Fingerprint);
+
                     if (existing != null)
                     {
-                        var oldTitle = existing.Title; // 瑞克和莫蒂：日漫版 [第10集]
-                        var (baseTitle, episodePart) = SplitTitle(oldTitle);
+                        bool hasNewContent = false;
 
-                        // --- 发现老数据：执行覆盖更新，同步标题和集数 ---
-                        existing.Title = baseTitle;
-                        existing.Episodes = episodePart;
+                        if (detail.SiteUpdateTime.HasValue)
+                        {
+                            if (!existing.SiteUpdateTime.HasValue || detail.SiteUpdateTime > existing.SiteUpdateTime)
+                                hasNewContent = true;
+                        }
+                        else if (episodePart.Length > existing.Episodes.Length)
+                        {
+                            hasNewContent = true;
+                        }
 
-                        existing.PlayUrls = detail.Play1;
-                        existing.BackupUrls = detail.Play2;
+                        if (hasNewContent)
+                        {
+                            existing.Title = baseTitle;
+                            existing.Episodes = episodePart;
+                            existing.PlayUrls = detail.Play1;
+                            existing.BackupUrls = detail.Play2 ?? string.Empty;
+                            existing.Year = detail.Year;
+                            existing.Area = detail.Area;
+                            existing.Category = detail.Category;
+                            existing.SiteUpdateTime = detail.SiteUpdateTime;
+                            existing.UpdateTime = DateTime.UtcNow;
 
-                        // 同步新增的筛选字段
-                        existing.Year = detail.Year;
-                        existing.Area = detail.Area;
-                        existing.Category = detail.Category;
-
-                        existing.UpdateTime = DateTime.UtcNow;
-
-                        await db.SaveChangesAsync();
-                        Console.WriteLine($"[更新] {item.Title} {i}/{total}");
+                            await db.SaveChangesAsync();
+                            Console.WriteLine($"[更新] {baseTitle}");
+                        }
+                        else
+                        {
+                            existing.UpdateTime = DateTime.UtcNow;
+                            await db.SaveChangesAsync();
+                            Console.WriteLine($"[跳过] {baseTitle}");
+                        }
                     }
                     else
                     {
-                        var oldTitle = item.Title;
-                        var (baseTitle, episodePart) = SplitTitle(oldTitle);
-
-                        // --- 发现新数据：执行入库 ---
                         db.Animes.Add(new AnimeInfo
                         {
+                            SourceFingerprint = item.Fingerprint,
                             Title = baseTitle,
                             Episodes = episodePart,
-                            JapaneseTitle = string.Empty, // 该网站爬不到
-                            EnglishTitle = string.Empty, // 该网站爬不到
-                            SourceFingerprint = item.Fingerprint,
+                            JapaneseTitle = string.Empty,
+                            EnglishTitle = string.Empty,
                             PlayUrls = detail.Play1,
-                            BackupUrls = detail.Play2 ?? string.Empty, // 满足 NOT NULL 约束
+                            BackupUrls = detail.Play2 ?? string.Empty,
                             Year = detail.Year,
                             Area = detail.Area,
                             Category = detail.Category,
-                            UpdateTime = DateTime.UtcNow
+                            UpdateTime = DateTime.UtcNow,
+                            SiteUpdateTime = detail.SiteUpdateTime
                         });
 
                         await db.SaveChangesAsync();
-                        Console.WriteLine($"[入库] {item.Title}");
+                        Console.WriteLine($"[入库] {baseTitle}");
                     }
                 }
             }
-            //Console.WriteLine("【爬虫】执行完毕！");
+
             sw.Stop();
-            Console.WriteLine($"【爬虫点火】执行完毕！总计耗时: {sw.Elapsed.TotalSeconds:F2} 秒");
+            Console.WriteLine($"【爬虫完成】总耗时 {sw.Elapsed.TotalSeconds:F2} 秒");
         }
         catch (Exception ex)
         {
-            //Console.WriteLine("【爬虫异常】" + ex.Message);
             sw.Stop();
-            Console.WriteLine($"【爬虫异常】耗时 {sw.Elapsed.TotalSeconds:F2} 秒后发生错误: {ex.Message}");
+            Console.WriteLine($"【爬虫异常】耗时 {sw.Elapsed.TotalSeconds:F2} 秒: {ex.Message}");
         }
     }
 
@@ -109,25 +122,17 @@ public class CrawlerService
         if (string.IsNullOrWhiteSpace(fullTitle))
             return (string.Empty, string.Empty);
 
-        // 正则匹配 [第...集]、[完结]、[第xx集完结] 等
-        var regex = new System.Text.RegularExpressions.Regex(
-            @"(\s*\[第.*?集.*?\]|\s*\[完结?\]|\s*\[.*?版.*?\])",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
+        var regex = new Regex(@"(\s*\[第.*?集.*?\]|\s*\[完结?\]|\s*\[.*?版.*?\])", RegexOptions.IgnoreCase);
         var match = regex.Match(fullTitle);
 
         if (match.Success)
         {
             string baseTitle = fullTitle.Substring(0, match.Index).Trim();
             string episodePart = match.Value.Trim();
-
-            // 清理多余空格
-            baseTitle = System.Text.RegularExpressions.Regex.Replace(baseTitle, @"\s+", " ").Trim();
-
+            baseTitle = Regex.Replace(baseTitle, @"\s+", " ").Trim();
             return (baseTitle, episodePart);
         }
 
-        // 没有括号的情况，直接返回
         return (fullTitle.Trim(), "");
     }
 }

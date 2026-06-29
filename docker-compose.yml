@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # 1. 数据库容器
   anime_db:
-    image: postgres:latest
+    image: postgres:16.4-alpine
     container_name: anime_db
     restart: always
     ports:
