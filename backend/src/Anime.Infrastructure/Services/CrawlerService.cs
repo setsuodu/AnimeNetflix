@@ -18,12 +18,13 @@ public class CrawlerService
         _http = http;
     }
 
-    public async Task Run(IAnimeScraper scraper, string urlTemplate)
+    public async Task Run(IAnimeScraper scraper, string urlTemplate, bool fullCrawl = false)
     {
         var sw = Stopwatch.StartNew();
+        int skipCount = 0;
         try
         {
-            Console.WriteLine($"【爬虫点火】开始时间: {DateTime.Now:HH:mm:ss}");
+            Console.WriteLine($"【爬虫点火】开始时间: {DateTime.Now:HH:mm:ss}，全量抓取: {fullCrawl}");
 
             _http.Timeout = TimeSpan.FromMinutes(10);
             var firstPageHtml = await _http.GetStringAsync(string.Format(urlTemplate, 1));
@@ -56,7 +57,7 @@ public class CrawlerService
                             if (!existing.SiteUpdateTime.HasValue || detail.SiteUpdateTime > existing.SiteUpdateTime)
                                 hasNewContent = true;
                         }
-                        else if (episodePart.Length > existing.Episodes.Length)
+                        else if (episodePart != existing.Episodes)
                         {
                             hasNewContent = true;
                         }
@@ -75,12 +76,25 @@ public class CrawlerService
 
                             await db.SaveChangesAsync();
                             Console.WriteLine($"[更新] {baseTitle}");
+                            skipCount = 0;
                         }
                         else
                         {
                             existing.UpdateTime = DateTime.UtcNow;
                             await db.SaveChangesAsync();
                             Console.WriteLine($"[跳过] {baseTitle}");
+
+                            if (!fullCrawl)
+                            {
+                                skipCount++;
+                                if (skipCount >= 5)
+                                {
+                                    Console.WriteLine($"【爬虫】连续5个跳过，提前结束");
+                                    sw.Stop();
+                                    Console.WriteLine($"【爬虫完成】总耗时 {sw.Elapsed.TotalSeconds:F2} 秒");
+                                    return;
+                                }
+                            }
                         }
                     }
                     else
@@ -103,6 +117,7 @@ public class CrawlerService
 
                         await db.SaveChangesAsync();
                         Console.WriteLine($"[入库] {baseTitle}");
+                        skipCount = 0;
                     }
                 }
             }

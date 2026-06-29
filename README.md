@@ -65,9 +65,22 @@ dotnet ef database update -p Anime.Infrastructure -s Anime.Api
 ## 访问
 
 8. https://localhost:8060/api/collector/run 👈开始爬取
+
+### 默认模式（5个跳过自动结束）
+```
+POST https://localhost:8060/api/collector/run
+```
+
+### 全量抓取模式（不走跳过逻辑）
+```
+POST https://localhost:8060/api/collector/run?fullCrawl=true
+# 或 body 里传 { "fullCrawl": true }
+```
 - 【爬虫完成】总耗时 1147.24 秒
 - 【爬虫完成】总耗时 3032.81 秒
+
 9. https://localhost:8060/api/netflix/export-seed 👈导出SQL种子
+
 10. https://localhost:8060/ 👈影院首页
 
 ## 部署
