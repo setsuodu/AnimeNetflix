@@ -43,6 +43,7 @@ namespace Anime.Api.Controllers
                 {
                     x.SourceFingerprint,   // 改为主键
                     x.Title,
+                    x.CoverUrl,           // ← 加上这行
                     x.PlayUrls,
                     x.BackupUrls,
                     x.Episodes,

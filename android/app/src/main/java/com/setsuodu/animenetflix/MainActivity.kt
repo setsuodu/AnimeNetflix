@@ -46,26 +46,37 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 @Serializable
 data class Anime(
-    val id: Int,
+    val sourceFingerprint: String,     // 新主键
     val title: String,
-    val coverUrl: String,
-    val playUrls: String = "",
-    val japaneseTitle: String = ""
+    val japaneseTitle: String = "",
+    val englishTitle: String = "",
+    val coverUrl: String = "",
+    val playUrls: String = "",         // 主线路（金鹰）
+    val backupUrls: String = "",       // 备用线路（红牛）
+    val year: Int = 0,
+    val area: String = "",
+    val category: String = "",
+    val episodes: String = ""
 )
 
 data class Episode(val title: String, val url: String)
 
-// ====================== API ======================
 interface NetflixApi {
     @GET("api/netflix")
     suspend fun getList(
         @Query("page") page: Int = 1,
-        @Query("pageSize") pageSize: Int = 30   // 和 Web 版保持一致
+        @Query("pageSize") pageSize: Int = 30,
+        @Query("search") search: String? = null
     ): List<Anime>
+
+    // ✅ 改成 fingerprint
+    @GET("api/netflix/{fingerprint}")
+    suspend fun getDetail(@Path("fingerprint") fingerprint: String): Anime
 }
 
 // ====================== MainActivity ======================
@@ -94,9 +105,9 @@ class MainActivity : ComponentActivity() {
                     composable("home") {
                         HomeScreen(api, imageBaseUrl, navController)
                     }
-                    composable("detail/{animeId}") { backStack ->
-                        val id = backStack.arguments?.getString("animeId")?.toInt() ?: 0
-                        DetailScreen(id, api, imageBaseUrl, navController)
+                    composable("detail/{fingerprint}") { backStack ->
+                        val fingerprint = backStack.arguments?.getString("fingerprint") ?: ""
+                        DetailScreen(fingerprint, api, imageBaseUrl, navController)
                     }
                 }
             }
@@ -117,11 +128,10 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
 
     val scope = rememberCoroutineScope()
 
-    // 加载分页
     suspend fun loadPage(page: Int, onResult: (List<Anime>, Boolean) -> Unit) {
         try {
             val newItems = withContext(Dispatchers.IO) {
-                api.getList(page = page, pageSize = 30)
+                api.getList(page = page, pageSize = 30, search = if (searchText.isBlank()) null else searchText)
             }
             val hasMoreData = newItems.size >= 30
             onResult(newItems, hasMoreData)
@@ -130,16 +140,8 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
         }
     }
 
-    // 过滤（本地搜索）
-    val filteredList = remember(searchText, animeList) {
-        if (searchText.isBlank()) animeList
-        else animeList.filter { anime ->
-            anime.title.contains(searchText, ignoreCase = true) ||
-                    anime.japaneseTitle.contains(searchText, ignoreCase = true)
-        }
-    }
+    val filteredList = animeList // 现在服务端支持 search，可直接用
 
-    // 初始加载第一页
     LaunchedEffect(Unit) {
         loadPage(1) { list, more ->
             animeList = list
@@ -157,10 +159,20 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
         }
     ) { padding ->
         Column(Modifier.padding(padding)) {
-            // ==================== 搜索框（保留你原来的清除按钮） ====================
             OutlinedTextField(
                 value = searchText,
-                onValueChange = { searchText = it },
+                onValueChange = {
+                    searchText = it
+                    currentPage = 1
+                    isLoading = true
+                    scope.launch {
+                        loadPage(1) { list, more ->
+                            animeList = list
+                            hasMore = more
+                            isLoading = false
+                        }
+                    }
+                },
                 label = { Text("搜索动漫...") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -170,9 +182,8 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
                     if (searchText.isNotEmpty()) {
                         IconButton(onClick = {
                             searchText = ""
-                            // 清空搜索后重新加载第一页
-                            isLoading = true
                             currentPage = 1
+                            isLoading = true
                             scope.launch {
                                 loadPage(1) { list, more ->
                                     animeList = list
@@ -181,10 +192,7 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
                                 }
                             }
                         }) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = "清除搜索"
-                            )
+                            Icon(Icons.Default.Clear, "清除")
                         }
                     }
                 }
@@ -204,11 +212,10 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
                 ) {
                     items(filteredList) { anime ->
                         AnimeCard(anime, imageBaseUrl) {
-                            navController.navigate("detail/${anime.id}")
+                            navController.navigate("detail/${anime.sourceFingerprint}")
                         }
                     }
 
-                    // ====================== Load More ======================
                     if (hasMore && searchText.isBlank()) {
                         item(span = { GridItemSpan(3) }) {
                             Box(
@@ -233,10 +240,7 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF679A))
                                 ) {
                                     if (isLoadingMore) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(20.dp),
-                                            color = Color.White
-                                        )
+                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
                                     } else {
                                         Text("查看更多")
                                     }
@@ -251,12 +255,8 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
 }
 
 @Composable
-fun AnimeCard(
-    anime: Anime,
-    imageBaseUrl: String,
-    onClick: () -> Unit
-) {
-    val mainImage = imageBaseUrl + anime.coverUrl
+fun AnimeCard(anime: Anime, imageBaseUrl: String, onClick: () -> Unit) {
+    val mainImage = imageBaseUrl + anime.coverUrl.ifEmpty { "/images/default_cover.jpg" }
     val defaultCover = "http://192.168.1.198:8060/images/default_cover.jpg"
 
     Card(
@@ -278,9 +278,7 @@ fun AnimeCard(
                     contentDescription = anime.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    // 1. 如果主图加载失败，自动换成默认封面
                     error = rememberAsyncImagePainter(defaultCover),
-                    // 2. 在主图还没加载出来的时候，显示的占位图（可选）
                     placeholder = rememberAsyncImagePainter(defaultCover)
                 )
             }
@@ -299,55 +297,137 @@ fun AnimeCard(
 // ====================== 详情页 + 播放器 ======================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailScreen(animeId: Int, api: NetflixApi, imageBaseUrl: String, navController: NavHostController) {
+fun DetailScreen(
+    fingerprint: String,           // ← 改成 fingerprint
+    api: NetflixApi,
+    imageBaseUrl: String,
+    navController: NavHostController
+) {
     var anime by remember { mutableStateOf<Anime?>(null) }
     var episodes by remember { mutableStateOf<List<Episode>>(emptyList()) }
+    var currentSource by remember { mutableStateOf(1) } // 1=主线路(PlayUrls), 2=备用线路(BackupUrls)
     var currentEpisode by remember { mutableStateOf<Episode?>(null) }
 
     val context = LocalContext.current
     val player = remember { ExoPlayer.Builder(context).build() }
 
-    LaunchedEffect(animeId) {
-        val list = withContext(Dispatchers.IO) { api.getList() }
-        anime = list.find { it.id == animeId }
-        anime?.let {
-            episodes = parsePlayUrls(it.playUrls)
+    // 加载详情
+    LaunchedEffect(fingerprint) {
+        try {
+            val detail = withContext(Dispatchers.IO) {
+                api.getDetail(fingerprint)
+            }
+            anime = detail
+
+            // 默认加载主线路
+            episodes = parsePlayUrls(detail.playUrls)
             if (episodes.isNotEmpty()) {
                 currentEpisode = episodes[0]
                 playUrl(player, episodes[0].url)
             }
+        } catch (e: Exception) {
+            Log.e("DetailScreen", "加载详情失败", e)
         }
     }
 
-    DisposableEffect(Unit) { onDispose { player.release() } }
+    DisposableEffect(Unit) {
+        onDispose { player.release() }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(anime?.title ?: "详情") },
-                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Text("←") } },
+                title = { Text(anime?.title ?: "加载中...") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Text("←", style = MaterialTheme.typography.titleLarge)
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(Color(0xFF141414))
             )
         }
     ) { padding ->
         Column(Modifier.padding(padding)) {
-            // 播放器
-            Box(Modifier.fillMaxWidth().height(260.dp)) {
-                AndroidView(factory = { PlayerView(it).apply { this.player = player } })
+            // 播放器区域
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(260.dp)
+                    .background(Color.Black)
+            ) {
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            this.player = player
+                            useController = true
+                        }
+                    }
+                )
+            }
+
+            // 动漫信息
+            anime?.let { a ->
+                Column(Modifier.padding(16.dp)) {
+                    // 副标题（日文 / 英文）
+                    if (a.japaneseTitle.isNotBlank() || a.englishTitle.isNotBlank()) {
+                        Text(
+                            text = listOf(a.japaneseTitle, a.englishTitle).filter { it.isNotBlank() }.joinToString(" / "),
+                            color = Color.Gray,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // 元信息标签
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (a.year > 0) MetaTag("${a.year}年")
+                        if (a.area.isNotBlank()) MetaTag(a.area)
+                        if (a.category.isNotBlank()) MetaTag(a.category)
+                        if (a.episodes.isNotBlank()) MetaTag(a.episodes, highlight = true)
+                    }
+                }
+            }
+
+            // 线路切换
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SourceButton("主线路", currentSource == 1) {
+                    currentSource = 1
+                    anime?.let { episodes = parsePlayUrls(it.playUrls) }
+                }
+                SourceButton("备用线路", currentSource == 2) {
+                    currentSource = 2
+                    anime?.let { episodes = parsePlayUrls(it.backupUrls) }
+                }
             }
 
             // 剧集列表
-            LazyColumn(Modifier.padding(12.dp)) {
-                itemsIndexed(episodes) { index, ep ->
+            Text(
+                text = "剧集列表 (${episodes.size}集)",
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.titleSmall
+            )
+
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp)
+            ) {
+                itemsIndexed(episodes) { _, ep ->
                     ListItem(
                         headlineContent = { Text(ep.title) },
                         colors = ListItemDefaults.colors(
-                            containerColor = if (ep == currentEpisode) Color(0xFF333333) else Color.Transparent
+                            containerColor = if (ep == currentEpisode) Color(0xFF2A2A2A) else Color.Transparent
                         ),
-                        modifier = Modifier.clickable {
-                            currentEpisode = ep
-                            playUrl(player, ep.url)
-                        }
+                        modifier = Modifier
+                            .padding(vertical = 2.dp)
+                            .clickable {
+                                currentEpisode = ep
+                                playUrl(player, ep.url)
+                            }
                     )
                 }
             }
@@ -355,16 +435,49 @@ fun DetailScreen(animeId: Int, api: NetflixApi, imageBaseUrl: String, navControl
     }
 }
 
+@Composable
+fun MetaTag(text: String, highlight: Boolean = false) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .background(
+                color = if (highlight) Color(0xFF4A1F2A) else Color(0xFF2A2A2A),
+                shape = MaterialTheme.shapes.small
+            )
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        color = if (highlight) Color(0xFFFF679A) else Color.LightGray,
+        style = MaterialTheme.typography.bodySmall
+    )
+}
+
+@Composable
+fun SourceButton(text: String, isActive: Boolean, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isActive) Color(0xFFE50914) else Color(0xFF333333)
+        )
+    ) {
+        Text(text)
+    }
+}
+
+// ====================== 辅助函数 ======================
 private fun parsePlayUrls(playUrls: String): List<Episode> {
-    return playUrls.split("#").mapNotNull {
-        val parts = it.split("$")
-        if (parts.size == 2) Episode(parts[0], parts[1]) else null
+    if (playUrls.isBlank()) return emptyList()
+    return playUrls.split("#").mapNotNull { line ->
+        val parts = line.split("$")
+        if (parts.size >= 2) Episode(parts[0].trim(), parts[1].trim()) else null
     }
 }
 
 private fun playUrl(player: ExoPlayer, url: String) {
-    val mediaItem = MediaItem.fromUri(url)
-    player.setMediaItem(mediaItem)
-    player.prepare()
-    player.play()
+    try {
+        val mediaItem = MediaItem.fromUri(url)
+        player.setMediaItem(mediaItem)
+        player.prepare()
+        player.play()
+    } catch (e: Exception) {
+        Log.e("Player", "播放失败: $url", e)
+    }
 }
