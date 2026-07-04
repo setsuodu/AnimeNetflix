@@ -102,6 +102,9 @@
             </select>
             <select id="filter-area">
                 <option value="">全部地区</option>
+                <option value="日本">日本</option>
+                <option value="中国">中国</option>
+                <option value="美国">美国</option>
             </select>
             <select id="filter-category">
                 <option value="">全部类型</option>
@@ -134,8 +137,12 @@
                 (data.years || []).sort((a, b) => b - a).forEach(y => {
                     filterYear.innerHTML += `<option value="${y}">${y}年</option>`;
                 });
+                const existingAreas = Array.from(filterArea.options).map(o => o.value);
                 (data.areas || []).forEach(a => {
-                    filterArea.innerHTML += `<option value="${a}">${a}</option>`;
+                    if (!existingAreas.includes(a)) {
+                        filterArea.innerHTML += `<option value="${a}">${a}</option>`;
+                        existingAreas.push(a);
+                    }
                 });
                 (data.categories || []).forEach(c => {
                     filterCategory.innerHTML += `<option value="${c}">${c}</option>`;

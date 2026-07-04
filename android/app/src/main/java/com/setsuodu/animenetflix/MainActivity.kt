@@ -71,7 +71,10 @@ interface NetflixApi {
     suspend fun getList(
         @Query("page") page: Int = 1,
         @Query("pageSize") pageSize: Int = 30,
-        @Query("search") search: String? = null
+        @Query("search") search: String? = null,
+        @Query("year") year: Int? = null,
+        @Query("area") area: String? = null,
+        @Query("category") category: String? = null
     ): List<Anime>
 
     // ✅ 改成 fingerprint
@@ -121,6 +124,8 @@ class MainActivity : ComponentActivity() {
 fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostController) {
     var animeList by remember { mutableStateOf<List<Anime>>(emptyList()) }
     var searchText by remember { mutableStateOf("") }
+    // 与 index.html 的 filter-area 下拉框保持一致：全部地区/日本/中国/美国
+    var selectedArea by remember { mutableStateOf("全部地区") }
     var currentPage by remember { mutableStateOf(1) }
     var isLoading by remember { mutableStateOf(true) }
     var isLoadingMore by remember { mutableStateOf(false) }
@@ -131,7 +136,12 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
     suspend fun loadPage(page: Int, onResult: (List<Anime>, Boolean) -> Unit) {
         try {
             val newItems = withContext(Dispatchers.IO) {
-                api.getList(page = page, pageSize = 30, search = if (searchText.isBlank()) null else searchText)
+                api.getList(
+                    page = page,
+                    pageSize = 30,
+                    search = if (searchText.isBlank()) null else searchText,
+                    area = if (selectedArea == "全部地区") null else selectedArea
+                )
             }
             val hasMoreData = newItems.size >= 30
             onResult(newItems, hasMoreData)
@@ -198,6 +208,26 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
                 }
             )
 
+            // 筛选栏：目前对齐 index.html 已完善的地区筛选（年份/类型待后端提供 /api/netflix/filters 后再补齐）
+            AreaFilterDropdown(
+                selectedArea = selectedArea,
+                onAreaSelected = { area ->
+                    selectedArea = area
+                    currentPage = 1
+                    isLoading = true
+                    scope.launch {
+                        loadPage(1) { list, more ->
+                            animeList = list
+                            hasMore = more
+                            isLoading = false
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+
             if (isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -249,6 +279,50 @@ fun HomeScreen(api: NetflixApi, imageBaseUrl: String, navController: NavHostCont
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+// 地区筛选下拉框：与 index.html 里写死的 filter-area 选项保持一致
+// （日本/中国/美国 —— 对应 NetflixController.GetList 的 area 精确匹配字段）
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AreaFilterDropdown(
+    selectedArea: String,
+    onAreaSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val areas = listOf("全部地区", "日本", "中国", "美国")
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = selectedArea,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("地区") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            areas.forEach { area ->
+                DropdownMenuItem(
+                    text = { Text(area) },
+                    onClick = {
+                        onAreaSelected(area)
+                        expanded = false
+                    }
+                )
             }
         }
     }
