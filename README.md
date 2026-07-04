@@ -68,13 +68,12 @@ dotnet ef database update -p Anime.Infrastructure -s Anime.Api
 
 ### 默认模式（5个跳过自动结束）
 ```
-POST https://localhost:8060/api/collector/run
+POST https://localhost:8060/api/collector/run?id=24
 ```
 
 ### 全量抓取模式（不走跳过逻辑）
 ```
-POST https://localhost:8060/api/collector/run?fullCrawl=true
-# 或 body 里传 { "fullCrawl": true }
+POST https://localhost:8060/api/collector/run?id=24&isFull=true
 ```
 - 【爬虫完成】总耗时 1147.24 秒
 - 【爬虫完成】总耗时 3032.81 秒

@@ -23,7 +23,7 @@ services:
 
   # 2. API 容器 (.NET 10)
   anime_api:
-    image: ghcr.io/setsuodu/animenetflix:v0.2.1
+    image: ghcr.io/setsuodu/animenetflix:v0.2.2
     container_name: animenetflix
     user: root 
     build:

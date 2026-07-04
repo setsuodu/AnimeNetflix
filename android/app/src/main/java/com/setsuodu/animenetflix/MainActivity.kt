@@ -1,7 +1,11 @@
 package com.setsuodu.animenetflix
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.ImageButton
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -16,6 +20,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +32,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -381,8 +390,10 @@ fun DetailScreen(
     var episodes by remember { mutableStateOf<List<Episode>>(emptyList()) }
     var currentSource by remember { mutableStateOf(1) } // 1=主线路(PlayUrls), 2=备用线路(BackupUrls)
     var currentEpisode by remember { mutableStateOf<Episode?>(null) }
+    var isFullscreen by remember { mutableStateOf(false) } // 播放器全屏状态
 
     val context = LocalContext.current
+    val activity = context as? Activity
     val player = remember { ExoPlayer.Builder(context).build() }
 
     // 加载详情
@@ -406,6 +417,65 @@ fun DetailScreen(
 
     DisposableEffect(Unit) {
         onDispose { player.release() }
+    }
+
+    // 全屏切换：横屏 + 隐藏系统状态栏/导航栏（沉浸式），退出时还原竖屏与系统栏
+    DisposableEffect(isFullscreen) {
+        val window = activity?.window
+        if (isFullscreen) {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            window?.let {
+                WindowCompat.setDecorFitsSystemWindows(it, false)
+                WindowInsetsControllerCompat(it, it.decorView).apply {
+                    hide(WindowInsetsCompat.Type.systemBars())
+                    systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                }
+            }
+        } else {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            window?.let {
+                WindowCompat.setDecorFitsSystemWindows(it, true)
+                WindowInsetsControllerCompat(it, it.decorView).show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            window?.let {
+                WindowCompat.setDecorFitsSystemWindows(it, true)
+                WindowInsetsControllerCompat(it, it.decorView).show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
+
+    // 全屏模式：只铺满播放器，其余详情/剧集列表都不渲染，右下角按钮用于退出全屏
+    if (isFullscreen) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            AndroidView(
+                factory = { ctx ->
+                    PlayerView(ctx).apply {
+                        this.player = player
+                        useController = true
+                        post {
+                            val settingsButton = findViewById<ImageButton>(R.id.exo_settings)
+                            settingsButton?.visibility = View.GONE
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+            FullscreenToggleButton(
+                isFullscreen = true,
+                onClick = { isFullscreen = false },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            )
+        }
+        return
     }
 
     Scaffold(
@@ -435,7 +505,16 @@ fun DetailScreen(
                             this.player = player
                             useController = true
                         }
-                    }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+                // 右下角全屏切换按钮
+                FullscreenToggleButton(
+                    isFullscreen = false,
+                    onClick = { isFullscreen = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
                 )
             }
 
@@ -506,6 +585,26 @@ fun DetailScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun FullscreenToggleButton(
+    isFullscreen: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier
+            .size(36.dp)
+            .background(Color.Black.copy(alpha = 0.5f), shape = MaterialTheme.shapes.small)
+    ) {
+        Icon(
+            imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+            contentDescription = if (isFullscreen) "退出全屏" else "全屏",
+            tint = Color.White
+        )
     }
 }
 
