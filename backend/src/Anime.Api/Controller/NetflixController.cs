@@ -15,19 +15,54 @@ namespace Anime.Api.Controllers
         public NetflixController(AnimeDbContext db) => _db = db;
 
         [HttpGet]
-        public async Task<IActionResult> GetList(int page = 1, int pageSize = 30, string? search = null)
+        public async Task<IActionResult> GetList(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 30,
+            [FromQuery] string? search = null,
+            [FromQuery] int? year = null,
+            [FromQuery] string? area = null,
+            [FromQuery] string? category = null)
         {
+            // ==========================================================
+            // 💡 抓鬼日志 1：进门第一件事，先把前端传过来的底裤参数全部打印出来！
+            // ==========================================================
+            Console.WriteLine($"\n[后端收到请求] 📥 原始请求参数 -> page: {page}, pageSize: {pageSize}, search: '{search}', year: {year}, area: '{area}', category: '{category}'");
+
             var query = _db.Animes.AsNoTracking();
 
+            // 1. 关键词搜索
             if (!string.IsNullOrWhiteSpace(search))
                 query = query.Where(x => x.Title.Contains(search));
 
-            // 跟资源站一样：按更新时间倒序（最新更新的排最前面）
+            // 2. 年份精确过滤
+            if (year.HasValue && year.Value > 0)
+                query = query.Where(x => x.Year == year.Value);
+
+            // 3. 地区精确过滤（中国/日本/美国）
+            if (!string.IsNullOrWhiteSpace(area))
+                query = query.Where(x => x.Area == area);
+
+            // 4. 类型模糊/精确过滤（如：热血/玄幻）
+            if (!string.IsNullOrWhiteSpace(category))
+                query = query.Where(x => x.Category.Contains(category));
+
+            // 严格分页排序
             var data = await query
-                .OrderByDescending(x => x.SiteUpdateTime)     // ← 改这里
+                .OrderByDescending(x => x.SiteUpdateTime)
+                .ThenByDescending(x => x.SourceFingerprint) // 👈 焊死这道防线！
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            // ==========================================================
+            // 💡 强力抓鬼日志：把这一页吐出去的所有动漫一条一条打印出来！
+            // ==========================================================
+            Console.WriteLine($"\n[后端开火] 当前请求 Page={page}, Size={pageSize}, 实际吐出数量={data.Count}");
+            for (int i = 0; i < data.Count; i++)
+            {
+                Console.WriteLine($"   第 {i + 1} 条 -> 标题: {data[i].Title} | 地区: {data[i].Area} | 指纹: {data[i].SourceFingerprint}");
+            }
+            Console.WriteLine("[后端结束]\n");
 
             return Ok(data);
         }

@@ -6,6 +6,9 @@ public class ScrapedAnimeModel
     public string Title { get; set; } = string.Empty;
     public string Fingerprint { get; set; } = string.Empty;
     public string DetailUrl { get; set; } = string.Empty;
+
+    // 新增：用于在 CrawlerService 中传递给详情页
+    public string TargetArea { get; set; } = string.Empty;
 }
 
 // 2. 详情页模型：承载所有深度数据，传回给 Service

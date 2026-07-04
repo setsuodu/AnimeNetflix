@@ -9,6 +9,6 @@ public interface IAnimeScraper
     // 拿目录列表
     List<ScrapedAnimeModel> ParseList(string html);
 
-    // 拿详情页所有数据（从元组升级为 Model，支持分类和年代）
-    ScrapedDetailModel ParseDetail(string html);
+    // 强制接收标准地区名称进行直接赋值
+    ScrapedDetailModel ParseDetail(string html, string area);
 }

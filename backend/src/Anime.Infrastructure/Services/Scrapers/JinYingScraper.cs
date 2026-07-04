@@ -69,18 +69,19 @@ public class JinYingScraper : IAnimeScraper
         return results;
     }
 
-    public ScrapedDetailModel ParseDetail(string html)
+    // 解析网页详情页
+    public ScrapedDetailModel ParseDetail(string html, string area)
     {
         var doc = new HtmlDocument();
         doc.LoadHtml(html);
         var res = new ScrapedDetailModel();
 
-        // 原有播放地址解析保持不变
+        // 1. 播放地址解析该怎么抓还怎么抓
         var p1Nodes = doc.DocumentNode.SelectNodes("//div[@id='play_1']//li")?.Select(n => n.InnerText.Trim());
         res.Play1 = CleanJinYingUrls(p1Nodes);
         res.Play2 = string.Empty;
 
-        // 原有年份、地区、类型解析...
+        // 2. 年份和类型我们还是从网页拿
         var infoNodes = doc.DocumentNode.SelectNodes("//div[@class='vodinfobox']//li");
         if (infoNodes != null)
         {
@@ -92,14 +93,22 @@ public class JinYingScraper : IAnimeScraper
                     var yearMatch = Regex.Match(text, @"\d{4}");
                     res.Year = yearMatch.Success ? int.Parse(yearMatch.Value) : 0;
                 }
-                if (text.Contains("地区：")) res.Area = text.Replace("地区：", "").Trim();
-                if (text.Contains("类型：")) res.Category = text.Replace("类型：", "").Trim();
+                if (text.Contains("类型："))
+                {
+                    res.Category = text.Replace("类型：", "").Trim();
+                }
+
+                // ❌ 彻底删掉对 "地区：" 的 text.Contains 判断！
+                // 根本不去看 HTML 里写的是什么垃圾文本
             }
         }
 
-        // 新增：尝试多种方式提取更新时间
-        res.SiteUpdateTime = ExtractSiteUpdateTime(doc);
+        // ==========================================================
+        // 传入的是 "中国" 进库就是 "中国"；传入 "日本" 进库就是 "日本"
+        // ==========================================================
+        res.Area = area;
 
+        res.SiteUpdateTime = ExtractSiteUpdateTime(doc);
         return res;
     }
 

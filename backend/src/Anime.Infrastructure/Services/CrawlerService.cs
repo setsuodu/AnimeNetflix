@@ -18,13 +18,14 @@ public class CrawlerService
         _http = http;
     }
 
-    public async Task Run(IAnimeScraper scraper, string urlTemplate, bool fullCrawl = false)
+    // 核心改造 1：Run 方法显式接收 targetArea，并为了向下兼容保持 fullCrawl 的默认值
+    public async Task Run(IAnimeScraper scraper, string urlTemplate, string targetArea, bool fullCrawl = false)
     {
         var sw = Stopwatch.StartNew();
         int skipCount = 0;
         try
         {
-            Console.WriteLine($"【爬虫点火】开始时间: {DateTime.Now:HH:mm:ss}，全量抓取: {fullCrawl}");
+            Console.WriteLine($"【爬虫点火】目标分类: {targetArea}，开始时间: {DateTime.Now:HH:mm:ss}，全量抓取: {fullCrawl}");
 
             _http.Timeout = TimeSpan.FromMinutes(10);
             var firstPageHtml = await _http.GetStringAsync(string.Format(urlTemplate, 1));
@@ -42,7 +43,9 @@ public class CrawlerService
                     using var db = _dbFactory.CreateDbContext();
 
                     var detailHtml = await _http.GetStringAsync(item.DetailUrl);
-                    var detail = scraper.ParseDetail(detailHtml);
+
+                    // 核心改造 2：把上层控制器传进来的国家字符串，直接砸给详情解析器！
+                    var detail = scraper.ParseDetail(detailHtml, targetArea);
 
                     var (baseTitle, episodePart) = SplitTitle(item.Title);
 
@@ -62,6 +65,12 @@ public class CrawlerService
                             hasNewContent = true;
                         }
 
+                        // 强制覆盖兜底逻辑：如果你是在做全量跑（fullCrawl = true），或者现有库里的 Area 是空的，也视为需要更新
+                        if (string.IsNullOrWhiteSpace(existing.Area))
+                        {
+                            hasNewContent = true;
+                        }
+
                         if (hasNewContent)
                         {
                             existing.Title = baseTitle;
@@ -69,13 +78,15 @@ public class CrawlerService
                             existing.PlayUrls = detail.Play1;
                             existing.BackupUrls = detail.Play2 ?? string.Empty;
                             existing.Year = detail.Year;
+
+                            // 更新区域（此处 detail.Area 必定不为空，因为 Scraper 里面已经做了兜底）
                             existing.Area = detail.Area;
                             existing.Category = detail.Category;
                             existing.SiteUpdateTime = detail.SiteUpdateTime;
                             existing.UpdateTime = DateTime.UtcNow;
 
                             await db.SaveChangesAsync();
-                            Console.WriteLine($"[更新] {baseTitle}");
+                            Console.WriteLine($"[更新/兜底] {baseTitle} | 地区: {existing.Area}");
                             skipCount = 0;
                         }
                         else
@@ -109,6 +120,8 @@ public class CrawlerService
                             PlayUrls = detail.Play1,
                             BackupUrls = detail.Play2 ?? string.Empty,
                             Year = detail.Year,
+
+                            // 新增入库区域
                             Area = detail.Area,
                             Category = detail.Category,
                             UpdateTime = DateTime.UtcNow,
@@ -116,7 +129,7 @@ public class CrawlerService
                         });
 
                         await db.SaveChangesAsync();
-                        Console.WriteLine($"[入库] {baseTitle}");
+                        Console.WriteLine($"[入库] {baseTitle} | 地区: {detail.Area}");
                         skipCount = 0;
                     }
                 }
