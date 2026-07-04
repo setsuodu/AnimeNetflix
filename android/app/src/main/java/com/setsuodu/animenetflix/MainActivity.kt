@@ -4,7 +4,9 @@ import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.util.Log
+import android.view.ContextThemeWrapper
 import android.view.View
+import android.view.ViewTreeObserver
 import android.widget.ImageButton
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -458,10 +460,12 @@ fun DetailScreen(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
                         this.player = player
-                        useController = true
+
+                        // 等布局完成再隐藏设置按钮
                         post {
-                            val settingsButton = findViewById<ImageButton>(R.id.exo_settings)
-                            settingsButton?.visibility = View.GONE
+                            // 通过内容描述找设置按钮（齿轮图标的内容描述通常是"Settings"）
+                            val settingsBtn = findViewById<View>(androidx.media3.ui.R.id.exo_settings)
+                            settingsBtn?.visibility = View.GONE
                         }
                     }
                 },
@@ -503,7 +507,13 @@ fun DetailScreen(
                     factory = { ctx ->
                         PlayerView(ctx).apply {
                             this.player = player
-                            useController = true
+
+                            // 等布局完成再隐藏设置按钮
+                            post {
+                                // 通过内容描述找设置按钮（齿轮图标的内容描述通常是"Settings"）
+                                val settingsBtn = findViewById<View>(androidx.media3.ui.R.id.exo_settings)
+                                settingsBtn?.visibility = View.GONE
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxSize()
