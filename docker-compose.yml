@@ -57,9 +57,11 @@ services:
       - "8061:80"                    # 宿主机用 8080 访问图片（可改）
     volumes:
       # 挂载宿主机的 covers 文件夹
-      - ./covers:/usr/share/nginx/html/covers:ro
+      - ./covers:/usr/share/nginx/html/covers
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-
+    # 加这个：每次启动先修权限
+    command: ["/bin/sh", "-c", "chmod -R 755 /usr/share/nginx/html/covers && nginx -g 'daemon off;'"]
+      
 # ★ 声明具名卷，由 Docker 自动管理
 volumes:
   anime_static: 

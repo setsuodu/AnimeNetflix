@@ -11,6 +11,7 @@ Thumbs.db
 **/.dockerignore
 
 # 临时文件
+**/obj/
 **/temp/
 **/tmp/
 postgres_data/

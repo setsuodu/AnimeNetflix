@@ -4,5 +4,7 @@
     <Project Path="src/Anime.Infrastructure/Anime.Infrastructure.csproj" />
   </Folder>
   <!-- Docker Compose 项目（Visual Studio 虚拟目录） -->
-  <Project Path="../docker-compose.dcproj" />
+  <Project Path="../docker-compose.dcproj">
+    <Build />
+  </Project>
 </Solution>
