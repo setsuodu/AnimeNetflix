@@ -59,6 +59,9 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import android.view.WindowManager
+import androidx.activity.compose.BackHandler
+import androidx.media3.common.Player
 
 @Serializable
 data class Anime(
@@ -417,8 +420,29 @@ fun DetailScreen(
         }
     }
 
+    // 播放中保持屏幕常亮（不熄屏）
     DisposableEffect(Unit) {
-        onDispose { player.release() }
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                activity?.window?.let { window ->
+                    if (isPlaying) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    } else {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                }
+            }
+        }
+        player.addListener(listener)
+        onDispose {
+            player.removeListener(listener)
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    // 全屏时拦截系统返回 / 左侧边缘滑动：只退出全屏，留在详情页，不返回首页
+    BackHandler(enabled = isFullscreen) {
+        isFullscreen = false
     }
 
     // 全屏切换：横屏 + 隐藏系统状态栏/导航栏（沉浸式），退出时还原竖屏与系统栏
