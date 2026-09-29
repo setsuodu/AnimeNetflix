@@ -48,8 +48,9 @@ jobs:
       - name: Docker Build & Push
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          # context = backend/（能看到 src/Anime.Api 与 src/Anime.Infrastructure）
+          context: ./backend
+          file: ./backend/src/Anime.Api/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/animenetflix:latest
