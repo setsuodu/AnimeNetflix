@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 
 namespace Anime.Infrastructure.Services.Scrapers;
@@ -141,6 +141,7 @@ public class JinYingScraper : IAnimeScraper
         return null;
     }
     // 专门处理金鹰播放地址的私有辅助函数
+    // 认路径形态 /play/xxx，不绑域名（ijycnd / kuktxu / 以后换域都适用）
     private string CleanJinYingUrls(IEnumerable<string>? nodes)
     {
         if (nodes == null) return string.Empty;
@@ -149,13 +150,16 @@ public class JinYingScraper : IAnimeScraper
         {
             if (!ep.Contains("$")) return ep;
 
-            var parts = ep.Split('$');
+            var parts = ep.Split('$', 2);
             var name = parts[0];
-            var url = parts[1].Trim();
+            var url = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+            if (string.IsNullOrEmpty(url)) return ep;
 
-            if (url.Contains("ijycnd.com/play/") && !url.EndsWith(".m3u8"))
+            // /play/一串ID 且尚未带 .m3u8 → 补 /index.m3u8
+            if (Regex.IsMatch(url, @"/play/[^/$#?]+$", RegexOptions.IgnoreCase)
+                && !url.EndsWith(".m3u8", StringComparison.OrdinalIgnoreCase))
             {
-                url = $"{url}/index.m3u8";
+                url = url.TrimEnd('/') + "/index.m3u8";
             }
             return $"{name}${url}";
         });
